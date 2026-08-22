@@ -1,0 +1,457 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0,viewport-fit=cover"><meta name="theme-color" content="#0a0e16"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="GVG Board"><meta name="mobile-web-app-capable" content="yes"><meta name="description" content="Grih Vigyan Gurukul - Digital Smart Board"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Smart Board - Gurukul</title><style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;touch-action:none;user-select:none;background:#111;}
+
+/* ═══ CANVAS ═══ */
+#canvas-container{position:fixed;inset:0;z-index:1;}
+#main-canvas,#temp-canvas{position:absolute;inset:0;width:100%;height:100%;}
+#temp-canvas{pointer-events:none;z-index:2;}
+#main-canvas{z-index:1;}
+
+/* ═══ WATERMARK ═══ */
+#watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;pointer-events:none;opacity:0;transition:opacity .5s ease;}
+#watermark.visible{opacity:1;}
+#watermark svg{width:min(35vw,35vh);height:min(35vw,35vh);filter:grayscale(30%);}
+
+/* ═══ TOP BAR ═══ */
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(10,14,22,.6);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.05);transition:transform .3s ease;}
+.top-bar.hidden{transform:translateY(-100%);}
+.top-left{display:flex;align-items:center;gap:10px;}
+.top-logo{width:36px;height:36px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);}
+.top-logo svg{width:28px;height:28px;}
+.top-title{color:rgba(255,255,255,.7);font-size:12px;font-weight:600;letter-spacing:.5px;}
+.top-title span{color:#00e5ff;}
+.top-right{display:flex;align-items:center;gap:6px;}
+.top-btn{width:34px;height:34px;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.top-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.top-btn.active{color:#00e5ff;}
+.file-badge{position:fixed;top:50px;right:16px;z-index:200;background:rgba(10,14,22,.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,.6);display:none;align-items:center;gap:8px;max-width:50vw;}
+.file-badge.visible{display:flex;}
+.file-badge .fname{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:180px;}
+.file-badge .close-file{background:none;border:none;color:rgba(255,255,255,.4);cursor:pointer;font-size:15px;}
+.file-badge .close-file:hover{color:#ff5252;}
+
+/* ═══ RECORDING TIMER ═══ */
+.rec-badge{display:none;position:fixed;top:50px;left:16px;z-index:200;align-items:center;gap:6px;background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);backdrop-filter:blur(12px);padding:5px 12px;border-radius:20px;color:#ff5252;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+.rec-badge.show{display:flex;}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:#ff5252;animation:recBlink 1s infinite;}
+@keyframes recBlink{0%,100%{opacity:1;}50%{opacity:.3;}}
+
+/* ═══ BOTTOM DOCK ═══ */
+.dock-wrap{position:fixed;bottom:0;left:0;right:0;z-index:200;display:flex;flex-direction:column;align-items:center;transition:transform .3s ease;}
+.dock-wrap.hidden{transform:translateY(100%);}
+
+.expand-panel{display:none;background:rgba(15,20,30,.92);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.1);border-bottom:none;border-radius:16px 16px 0 0;padding:10px 14px;max-width:92vw;margin-bottom:-1px;animation:panelIn .25s ease;}
+.expand-panel.open{display:flex;flex-wrap:wrap;gap:6px;align-items:center;justify-content:center;}
+@keyframes panelIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+.exp-btn{min-width:42px;height:42px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.55);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;flex-shrink:0;}
+.exp-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.exp-btn.active{background:rgba(0,188,212,.25);color:#00e5ff;box-shadow:inset 0 0 0 1.5px rgba(0,229,255,.4);}
+.exp-btn .tip{display:none;position:absolute;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(10,14,22,.95);color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.1);}
+.exp-btn:hover .tip{display:block;}
+.exp-sep{width:1px;height:28px;background:rgba(255,255,255,.08);flex-shrink:0;}
+.exp-color{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.exp-color:hover,.exp-color.active{border-color:#fff;transform:scale(1.15);}
+.exp-color-picker{position:relative;width:26px;height:26px;flex-shrink:0;}
+.exp-color-picker input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.exp-color-icon{width:26px;height:26px;border-radius:50%;border:2px dashed rgba(255,255,255,.25);background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red);pointer-events:none;}
+.exp-slider{-webkit-appearance:none;appearance:none;width:80px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;outline:none;cursor:pointer;}
+.exp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#00e5ff;cursor:pointer;box-shadow:0 0 6px rgba(0,229,255,.5);}
+.exp-label{color:rgba(255,255,255,.45);font-size:10px;min-width:30px;text-align:center;}
+.bg-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.bg-swatch{width:30px;height:30px;border-radius:8px;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;}
+.bg-swatch:hover,.bg-swatch.active{border-color:#fff;transform:scale(1.1);}
+.wm-toggle{display:flex;align-items:center;gap:8px;padding:4px 12px;border-radius:8px;background:rgba(255,255,255,.05);cursor:pointer;transition:all .15s;}
+.wm-toggle:hover{background:rgba(255,255,255,.1);}
+.wm-toggle span{color:rgba(255,255,255,.6);font-size:11px;}
+.wm-toggle .toggle-track{width:36px;height:20px;border-radius:10px;background:rgba(255,255,255,.15);position:relative;transition:background .2s;}
+.wm-toggle .toggle-track.on{background:rgba(0,229,255,.5);}
+.wm-toggle .toggle-knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;}
+.wm-toggle .toggle-track.on .toggle-knob{left:18px;}
+
+.dock{display:flex;align-items:center;gap:4px;padding:8px 12px;background:rgba(10,14,22,.85);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.07);border-radius:18px 18px 0 0;margin:0 8px;}
+.dk-btn{width:44px;height:44px;border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;flex-shrink:0;}
+.dk-btn:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateY(-3px) scale(1.05);}
+.dk-btn.active{background:rgba(0,188,212,.2);color:#00e5ff;box-shadow:0 0 12px rgba(0,229,255,.2);}
+.dk-btn .dk-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,.35);white-space:nowrap;pointer-events:none;}
+.dk-sep{width:1px;height:30px;background:rgba(255,255,255,.06);flex-shrink:0;}
+.dk-page{padding:4px 8px;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.5);font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px;transition:all .15s;flex-shrink:0;}
+.dk-page:hover{background:rgba(255,255,255,.08);color:#fff;}
+
+.slide-strip{display:none;position:fixed;bottom:150px;left:50%;transform:translateX(-50%);z-index:200;background:rgba(10,14,22,.85);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:6px 10px;gap:6px;align-items:center;max-width:70vw;overflow-x:auto;}
+.slide-strip.visible{display:flex;}
+.slide-strip::-webkit-scrollbar{height:3px;}
+.slide-strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px;}
+.pages-toggle-btn{display:none;position:fixed;bottom:104px;left:50%;transform:translateX(-50%);z-index:199;background:rgba(10,14,22,.8);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.65);font-size:11px;align-items:center;gap:6px;cursor:pointer;}
+.pages-toggle-btn.show{display:flex;}
+.pages-toggle-btn.active{color:#00e5ff;border-color:rgba(0,229,255,.35);background:rgba(0,188,212,.12);}
+.slide-thumb{width:72px;height:44px;min-width:72px;border-radius:6px;border:2px solid rgba(255,255,255,.08);cursor:pointer;overflow:hidden;transition:all .15s;position:relative;background:rgba(255,255,255,.03);}
+.slide-thumb:hover{border-color:rgba(0,229,255,.5);}
+.slide-thumb.active{border-color:#00e5ff;box-shadow:0 0 12px rgba(0,229,255,.3);}
+.slide-thumb canvas{width:100%;height:100%;display:block;}
+.slide-thumb .snum{position:absolute;bottom:1px;right:2px;font-size:7px;color:#fff;background:rgba(0,0,0,.6);padding:0 3px;border-radius:2px;}
+
+.cursor-pen{cursor:crosshair;}.cursor-highlighter{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='28'%3E%3Crect x='3' y='3' width='22' height='22' rx='3' fill='rgba(255,235,59,.35)' stroke='rgba(255,235,59,.8)' stroke-width='1.5'/%3E%3C/svg%3E") 14 14, auto;}.cursor-eraser{cursor:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Ccircle cx='12' cy='12' r='10' fill='rgba(255,255,255,.3)' stroke='rgba(255,255,255,.8)' stroke-width='1.5'/%3E%3C/svg%3E") 12 12, auto;}.cursor-pointer{cursor:default;}.cursor-text{cursor:text;}.cursor-image{cursor:copy;}.cursor-shape{cursor:crosshair;}
+
+#text-input-overlay{display:none;position:fixed;z-index:300;}
+#text-input-overlay textarea{background:rgba(15,20,30,.92);color:#fff;border:2px solid rgba(0,229,255,.5);border-radius:10px;padding:12px 14px;font-size:20px;line-height:1.5;outline:none;font-family:'Noto Sans Devanagari','Noto Sans','Segoe UI',system-ui,sans-serif;resize:both;min-width:200px;min-height:60px;max-width:80vw;backdrop-filter:blur(12px);}
+#text-input-overlay .text-bar{display:flex;gap:4px;margin-top:4px;}
+#text-input-overlay .text-bar button{padding:4px 12px;border:none;border-radius:6px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:11px;}
+#text-input-overlay .text-bar button:hover{background:rgba(255,255,255,.2);}
+
+/* ═══ PASTE OVERLAY ═══ */
+.paste-overlay{display:none;position:fixed;inset:0;z-index:310;background:rgba(0,0,0,.6);backdrop-filter:blur(6px);align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.paste-overlay.show{display:flex;}
+.paste-overlay .paste-box{width:min(80vw,480px);min-height:120px;background:rgba(15,20,30,.95);border:2px dashed rgba(0,229,255,.5);border-radius:14px;padding:16px;color:rgba(255,255,255,.55);font-size:14px;outline:none;text-align:center;display:flex;align-items:center;justify-content:center;}
+.paste-overlay .paste-box:empty::before{content:attr(data-placeholder);}
+.paste-overlay .paste-hint{color:rgba(255,255,255,.4);font-size:11px;text-align:center;max-width:80vw;}
+.paste-overlay button{padding:8px 20px;border:none;border-radius:10px;background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:12px;}
+.paste-overlay button:hover{background:rgba(255,255,255,.2);}
+
+#file-upload,#image-insert{display:none;}
+
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,229,255,.9);color:#0a0e16;padding:8px 20px;border-radius:10px;font-size:12px;font-weight:600;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80vw;text-align:center;}
+.toast.show{opacity:1;}
+
+.file-modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
+.file-modal-overlay.open{display:flex;}
+.file-modal{background:rgba(20,25,40,.95);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;max-width:500px;width:90%;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.6);}
+.file-modal h2{color:#fff;font-size:17px;margin-bottom:16px;}.file-modal h2 span{color:#00e5ff;}
+.file-drop{border:2px dashed rgba(255,255,255,.12);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;}
+.file-drop:hover,.file-drop.dragover{border-color:#00e5ff;background:rgba(0,229,255,.05);}
+.file-drop .icon{font-size:42px;margin-bottom:8px;}.file-drop p{color:rgba(255,255,255,.5);font-size:13px;line-height:1.7;}.file-drop .sub{color:rgba(255,255,255,.25);font-size:10px;margin-top:6px;}
+.file-drop .formats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;}
+.file-drop .format-tag{padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600;background:rgba(0,229,255,.1);color:rgba(0,229,255,.8);border:1px solid rgba(0,229,255,.15);}
+.file-loading{display:none;text-align:center;padding:30px;color:rgba(255,255,255,.5);}
+.file-loading .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#00e5ff;border-radius:50%;margin:0 auto 10px;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.file-error{display:none;color:#ff5252;text-align:center;padding:14px;font-size:12px;}
+.file-modal-close{float:right;background:none;border:none;color:rgba(255,255,255,.3);font-size:22px;cursor:pointer;line-height:1;}.file-modal-close:hover{color:#fff;}
+
+.restore-tab{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:250;width:60px;height:14px;background:rgba(10,14,22,.7);border-radius:0 0 10px 10px;display:none;align-items:center;justify-content:center;cursor:pointer;}
+.restore-tab.show{display:flex;}
+.restore-tab::after{content:'';width:24px;height:3px;background:rgba(255,255,255,.3);border-radius:2px;}
+
+/* ═══ IMAGE PLACEMENT BAR ═══ */
+.img-place-bar{display:none;position:fixed;bottom:130px;left:50%;transform:translateX(-50%);z-index:260;align-items:center;gap:10px;background:rgba(10,14,22,.92);backdrop-filter:blur(20px);border:1px solid rgba(0,229,255,.25);border-radius:14px;padding:8px 10px 8px 16px;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.img-place-bar.show{display:flex;}
+.img-place-bar .hint{color:rgba(255,255,255,.55);font-size:11px;white-space:nowrap;}
+.img-place-bar button{border:none;border-radius:10px;padding:8px 16px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;}
+.img-place-bar .place-btn{background:#00e5ff;color:#0a0e16;}
+.img-place-bar .cancel-btn{background:rgba(255,82,82,.15);color:#ff5252;border:1px solid rgba(255,82,82,.3);}
+</style></head><body>
+
+<div id="canvas-container"><canvas id="main-canvas"></canvas><canvas id="temp-canvas"></canvas></div>
+
+<div id="watermark">
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+<circle cx="200" cy="200" r="190" fill="none" stroke="rgba(180,140,60,.4)" stroke-width="6"/>
+<circle cx="200" cy="200" r="180" fill="none" stroke="rgba(180,140,60,.3)" stroke-width="2"/>
+<path d="M120 200 L200 120 L280 200" fill="none" stroke="rgba(180,140,60,.5)" stroke-width="4" stroke-linejoin="round"/>
+<rect x="140" y="200" width="120" height="100" fill="none" stroke="rgba(180,140,60,.4)" stroke-width="3"/>
+<rect x="180" y="240" width="40" height="60" fill="none" stroke="rgba(180,140,60,.3)" stroke-width="2"/>
+<path d="M170 280 L200 270 L230 280" fill="none" stroke="rgba(180,140,60,.4)" stroke-width="2"/>
+<text x="200" y="340" text-anchor="middle" font-family="serif" font-size="28" font-weight="bold" fill="rgba(180,140,60,.5)">गृह विज्ञान</text>
+<text x="200" y="365" text-anchor="middle" font-family="serif" font-size="18" fill="rgba(180,140,60,.4)">गुरुकूल</text>
+<circle cx="100" cy="340" r="3" fill="rgba(180,140,60,.3)"/><circle cx="130" cy="355" r="2" fill="rgba(180,140,60,.2)"/><circle cx="270" cy="355" r="2" fill="rgba(180,140,60,.2)"/><circle cx="300" cy="340" r="3" fill="rgba(180,140,60,.3)"/>
+</svg>
+</div>
+
+<div class="top-bar" id="top-bar">
+<div class="top-left">
+<div class="top-logo"><svg viewBox="0 0 40 40"><circle cx="20" cy="20" r="18" fill="none" stroke="#b48c3c" stroke-width="2"/><path d="M12 20 L20 12 L28 20" fill="none" stroke="#b48c3c" stroke-width="1.5" stroke-linejoin="round"/><rect x="14" y="20" width="12" height="10" fill="none" stroke="#b48c3c" stroke-width="1"/></svg></div>
+<div class="top-title"><span>गृह विज्ञान</span> गुरुकूल</div>
+</div>
+<div class="top-right">
+<button class="top-btn" id="rec-timer-btn" title="Recording Timer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg></button>
+<button class="top-btn" id="wm-toggle-btn" title="Watermark"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12h8"/><path d="M12 8v8"/></svg></button>
+<button class="top-btn" id="hide-ui-btn" title="Hide UI"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 014-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/></svg></button>
+<button class="top-btn" id="home-btn" title="Clear Board"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l9-9 9 9"/><path d="M9 21V12h6v9"/></svg></button>
+</div>
+</div>
+
+<div class="rec-badge" id="rec-badge"><span class="rec-dot"></span><span id="rec-time">00:00</span></div>
+<div class="file-badge" id="file-badge"><span class="fname" id="file-filename">file.pdf</span><span id="file-page-info">1/1</span><button class="close-file" id="close-file-btn">&times;</button></div>
+
+<div class="dock-wrap" id="dock-wrap">
+<div class="expand-panel" id="exp-tools"></div>
+<div class="expand-panel" id="exp-colors"></div>
+<div class="expand-panel" id="exp-shapes"></div>
+<div class="expand-panel" id="exp-settings"></div>
+
+<div class="dock" id="dock">
+<button class="dk-page" id="prev-page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>
+<span class="exp-label" id="page-label">1/1</span>
+<button class="dk-page" id="next-page"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>
+<div class="dk-sep"></div>
+<button class="dk-btn" id="dk-tools" title="Tools"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg><span class="dk-label">Tools</span></button>
+<button class="dk-btn" id="dk-colors" title="Colors"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 009 9" stroke="#ff5252" fill="#ff5252" stroke-width="0"/><path d="M12 3a9 9 0 003 12.7" stroke="#69f0ae" fill="#69f0ae" stroke-width="0"/><path d="M21 12a9 9 0 00-9-9" stroke="#448aff" fill="#448aff" stroke-width="0"/></svg><span class="dk-label">Colors</span></button>
+<button class="dk-btn" id="dk-shapes" title="Shapes"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="8" height="8" rx="1"/><circle cx="17" cy="17" r="5"/></svg><span class="dk-label">Shapes</span></button>
+<button class="dk-btn" id="dk-file" title="Open File"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><polyline points="9 15 12 18 15 15"/></svg><span class="dk-label">File</span></button>
+<div class="dk-sep"></div>
+<button class="dk-btn" id="dk-undo" title="Undo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 105.64-11.36L1 10"/></svg></button>
+<button class="dk-btn" id="dk-redo" title="Redo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-5.64-11.36L23 10"/></svg></button>
+<button class="dk-btn" id="dk-clear" title="Clear"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></button>
+<button class="dk-btn" id="dk-save" title="Save Page (PNG)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+<div class="dk-sep"></div>
+<button class="dk-btn" id="dk-settings" title="Settings"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg><span class="dk-label">Settings</span></button>
+<button class="dk-btn" id="dk-zoomout" title="Zoom -"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+<button class="dk-btn" id="dk-zoomin" title="Zoom +"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg></button>
+</div>
+</div>
+
+<div id="text-input-overlay"><textarea id="text-area" rows="2" placeholder="Type here... / यहाँ लिखें..." spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" lang="hi"></textarea><div class="text-bar"><button id="text-done">Done</button><button id="text-cancel">Cancel</button></div></div>
+<div class="paste-overlay" id="paste-overlay"><div class="paste-box" id="paste-target" contenteditable="true" data-placeholder="Yahan long-press karke Paste dabao"></div><p class="paste-hint">Google ya kahin se copy kiya hua image/text yahan paste karo</p><button id="paste-cancel-btn">Cancel</button></div>
+<input type="file" id="file-upload" accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp,.svg">
+<input type="file" id="image-insert" accept="image/*">
+<div class="toast" id="toast"></div>
+<div class="img-place-bar" id="img-place-bar"><span class="hint">Kone se resize • Beech se move • Bahar tap kro deselect</span><button class="cancel-btn" id="img-delete-btn">🗑 Delete</button></div>
+<div class="slide-strip" id="slide-strip"></div>
+<button class="pages-toggle-btn" id="pages-toggle-btn">🗂 Pages</button>
+<div class="file-modal-overlay" id="file-modal"><div class="file-modal"><button class="file-modal-close" id="file-modal-close">&times;</button><h2>Import <span>File</span></h2><div class="file-drop" id="file-drop-zone"><div class="icon">📂</div><p>Drag & drop or click to browse</p><div class="formats"><span class="format-tag">PDF</span><span class="format-tag">Images</span></div><p class="sub">PDF ke har page ek slide banega</p></div><div class="file-loading" id="file-loading"><div class="spinner"></div><p>Processing...</p></div><div class="file-error" id="file-error"></div></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>if(window['pdfjsLib']){pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';}</script>
+<script>
+// ═══════════════════════════════════════════════════════════
+//  GRIH VIGYAN GURUKUL — SMART BOARD
+// ═══════════════════════════════════════════════════════════
+if('serviceWorker' in navigator){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+
+const MC=document.getElementById('main-canvas'),TC=document.getElementById('temp-canvas');
+const ctx=MC.getContext('2d'),tctx=TC.getContext('2d');
+const container=document.getElementById('canvas-container'),toastEl=document.getElementById('toast');
+const txOv=document.getElementById('text-input-overlay'),txA=document.getElementById('text-area');
+
+let S={tool:'pen',color:'#00e5ff',size:4,zoom:1,bgColor:'#111111',gridOn:false,isDrawing:false,startX:0,startY:0,lastX:0,lastY:0,lastPointTime:0,strokeDist:0,currentPressure:null,pages:[{bg:null,ann:null}],currentPage:0,undoStack:[],redoStack:[],maxUndo:40,pointerTrail:[],laserActive:false,docActive:false,fileName:'',currentShape:'rect',currentImages:[],selectedImageIndex:-1,strokePoints:[],recording:false,recordStart:0};
+let txP={x:0,y:0};
+let recInterval=null;
+
+function drawGridOnto(c,w,h){c.save();const step=50;c.strokeStyle='rgba(128,128,128,.25)';c.lineWidth=1;c.beginPath();for(let x=0;x<w;x+=step){c.moveTo(x,0);c.lineTo(x,h);}for(let y=0;y<h;y+=step){c.moveTo(0,y);c.lineTo(w,y);}c.stroke();c.restore();}
+function fillBg(){ctx.fillStyle=S.bgColor;ctx.fillRect(0,0,MC.width,MC.height);if(S.gridOn)drawGridOnto(ctx,MC.width,MC.height);}
+function resize(){const w=innerWidth,h=innerHeight;let d=null;try{d=ctx.getImageData(0,0,MC.width,MC.height);}catch(e){}MC.width=w;MC.height=h;TC.width=w;TC.height=h;if(d){try{ctx.putImageData(d,0,0);}catch(e){fillBg();}}else{fillBg();}}
+resize();window.addEventListener('resize',resize);
+
+function showToast(m){toastEl.textContent=m;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),1800);}
+
+// ═══ UNDO/REDO ═══
+function saveState(){S.undoStack.push(ctx.getImageData(0,0,MC.width,MC.height));if(S.undoStack.length>S.maxUndo)S.undoStack.shift();S.redoStack=[];}
+function undo(){if(!S.undoStack.length)return;S.redoStack.push(ctx.getImageData(0,0,MC.width,MC.height));ctx.putImageData(S.undoStack.pop(),0,0);}
+function redo(){if(!S.redoStack.length)return;S.undoStack.push(ctx.getImageData(0,0,MC.width,MC.height));ctx.putImageData(S.redoStack.pop(),0,0);}
+document.getElementById('dk-undo').onclick=e=>{e.stopPropagation();undo();};
+document.getElementById('dk-redo').onclick=e=>{e.stopPropagation();redo();};
+
+// ═══ PAGE RENDERING (shared by live canvas, PDF export, thumbnails, autosave) ═══
+function renderPageOnto(c,pg,w,h){if(pg.ann){c.putImageData(pg.ann,0,0);return;}if(pg.bg){const sa=pg.bg.width/pg.bg.height,ca=w/h;let dw,dh,dx,dy;if(ca>sa){dh=h;dw=dh*sa;dx=(w-dw)/2;dy=0;}else{dw=w;dh=dw/sa;dx=0;dy=(h-dh)/2;}c.fillStyle='#ffffff';c.fillRect(0,0,w,h);c.drawImage(pg.bg,dx,dy,dw,dh);return;}c.fillStyle=S.bgColor;c.fillRect(0,0,w,h);if(S.gridOn)drawGridOnto(c,w,h);}
+function drawPageBg(pg){renderPageOnto(ctx,pg,MC.width,MC.height);}
+
+// ═══ PAGES ═══
+function savePage(){S.pages[S.currentPage].ann=ctx.getImageData(0,0,MC.width,MC.height);}
+function loadPage(i){if(i<0||i>=S.pages.length)return;flattenCurrentImages();savePage();S.currentPage=i;const pg=S.pages[i];ctx.clearRect(0,0,MC.width,MC.height);if(pg.ann){ctx.putImageData(pg.ann,0,0);}else{drawPageBg(pg);}S.undoStack=[];S.redoStack=[];updatePageLabel();updateSlideStripActive();}
+function updatePageLabel(){document.getElementById('page-label').textContent=(S.currentPage+1)+'/'+S.pages.length;document.getElementById('file-page-info').textContent=(S.currentPage+1)+'/'+S.pages.length;}
+function addBlankPage(){savePage();S.pages.push({bg:null,ann:null});loadPage(S.pages.length-1);if(S.docActive)buildSlideStrip();updatePagesToggleBtn();showToast('Naya page jud gaya');}
+function deleteCurrentPage(){if(S.pages.length<=1){showToast('Kam se kam 1 page zaroori hai');return;}S.pages.splice(S.currentPage,1);S.currentPage=Math.min(S.currentPage,S.pages.length-1);ctx.clearRect(0,0,MC.width,MC.height);const pg=S.pages[S.currentPage];if(pg.ann){ctx.putImageData(pg.ann,0,0);}else{drawPageBg(pg);}S.undoStack=[];S.redoStack=[];updatePageLabel();if(S.docActive)buildSlideStrip();updatePagesToggleBtn();showToast('Page delete ho gaya');}
+document.getElementById('prev-page').onclick=e=>{e.stopPropagation();if(S.currentPage>0)loadPage(S.currentPage-1);};
+document.getElementById('next-page').onclick=e=>{e.stopPropagation();if(S.currentPage<S.pages.length-1){loadPage(S.currentPage+1);}else{addBlankPage();}};
+
+// ═══ PANELS ═══
+const panels={tools:document.getElementById('exp-tools'),colors:document.getElementById('exp-colors'),shapes:document.getElementById('exp-shapes'),settings:document.getElementById('exp-settings')};
+const dkBtns={tools:document.getElementById('dk-tools'),colors:document.getElementById('dk-colors'),shapes:document.getElementById('dk-shapes'),settings:document.getElementById('dk-settings')};
+function closeAllPanels(){Object.values(panels).forEach(p=>p.classList.remove('open'));}
+function togglePanel(name){const isOpen=panels[name].classList.contains('open');closeAllPanels();if(!isOpen)panels[name].classList.add('open');}
+Object.keys(dkBtns).forEach(k=>dkBtns[k].addEventListener('click',e=>{e.stopPropagation();togglePanel(k);}));
+
+function setTool(t){if(t!=='select'&&S.currentImages.length){flattenCurrentImages();}S.tool=t;const c=container;c.className=c.className.replace(/cursor-\S+/g,'').trim();const cm={pen:'cursor-pen',highlighter:'cursor-highlighter',eraser:'cursor-eraser',pointer:'cursor-pointer',text:'cursor-text',shape:'cursor-shape',select:'cursor-image'};c.classList.add(cm[t]||'cursor-pen');document.querySelectorAll('#exp-tools .exp-btn[data-tool]').forEach(b=>b.classList.toggle('active',b.dataset.tool===t));document.getElementById('dk-tools').classList.toggle('active',['pen','highlighter','eraser','pointer','text','select'].includes(t));document.getElementById('dk-shapes').classList.toggle('active',t==='shape');}
+
+function buildToolsPanel(){const p=panels.tools;p.innerHTML='';const tools=[['pen','✏️','Pen'],['highlighter','🖍️','Highlighter'],['eraser','🧹','Eraser'],['select','↖️','Select (tap image)'],['pointer','🔴','Laser Pointer'],['text','T','Text']];tools.forEach(([id,ic,label])=>{const b=document.createElement('button');b.className='exp-btn';b.dataset.tool=id;b.innerHTML=ic+'<span class="tip">'+label+'</span>';b.onclick=e=>{e.stopPropagation();setTool(id);};p.appendChild(b);});const imgBtn=document.createElement('button');imgBtn.className='exp-btn';imgBtn.innerHTML='🖼️<span class="tip">Insert Image</span>';imgBtn.onclick=e=>{e.stopPropagation();document.getElementById('image-insert').click();};p.appendChild(imgBtn);const pasteBtn=document.createElement('button');pasteBtn.className='exp-btn';pasteBtn.innerHTML='📋<span class="tip">Paste (image/text)</span>';pasteBtn.onclick=e=>{e.stopPropagation();tryPasteButton();};p.appendChild(pasteBtn);const sep=document.createElement('div');sep.className='exp-sep';p.appendChild(sep);const slider=document.createElement('input');slider.type='range';slider.min=1;slider.max=40;slider.value=S.size;slider.className='exp-slider';const sizeLabel=document.createElement('span');sizeLabel.className='exp-label';sizeLabel.textContent=S.size+'px';slider.oninput=e=>{e.stopPropagation();S.size=+e.target.value;sizeLabel.textContent=S.size+'px';};p.appendChild(slider);p.appendChild(sizeLabel);setTool(S.tool);}
+
+function buildColorsPanel(){const p=panels.colors;p.innerHTML='';const cols=['#ffffff','#000000','#ff5252','#ff9100','#ffeb3b','#69f0ae','#00e5ff','#448aff','#b388ff','#ff80ab'];cols.forEach(c=>{const s=document.createElement('div');s.className='exp-color';s.style.background=c;if(c===S.color)s.classList.add('active');s.onclick=e=>{e.stopPropagation();S.color=c;document.querySelectorAll('.exp-color').forEach(x=>x.classList.remove('active'));s.classList.add('active');};p.appendChild(s);});const pickWrap=document.createElement('div');pickWrap.className='exp-color-picker';const inp=document.createElement('input');inp.type='color';inp.value=S.color;inp.oninput=e=>{e.stopPropagation();S.color=e.target.value;document.querySelectorAll('.exp-color').forEach(x=>x.classList.remove('active'));};pickWrap.appendChild(inp);const icon=document.createElement('div');icon.className='exp-color-icon';pickWrap.appendChild(icon);p.appendChild(pickWrap);}
+
+function buildShapesPanel(){const p=panels.shapes;p.innerHTML='';const shapes=[['line','&#9585;','Line'],['rect','&#9645;','Rectangle'],['circle','&#9711;','Circle'],['arrow','&#10142;','Arrow'],['diamond','&#9671;','Diamond']];shapes.forEach(([id,ic,label])=>{const b=document.createElement('button');b.className='exp-btn';b.dataset.shape=id;b.innerHTML=ic+'<span class="tip">'+label+'</span>';if(id===S.currentShape)b.classList.add('active');b.onclick=e=>{e.stopPropagation();S.currentShape=id;setTool('shape');document.querySelectorAll('#exp-shapes .exp-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');};p.appendChild(b);});}
+
+function buildSettingsPanel(){const p=panels.settings;p.innerHTML='';
+const row=document.createElement('div');row.className='bg-row';const bgs=['#111111','#ffffff','#000000','#f3ecd9'];bgs.forEach(c=>{const sw=document.createElement('div');sw.className='bg-swatch';sw.style.background=c;if(c===S.bgColor)sw.classList.add('active');sw.onclick=e=>{e.stopPropagation();S.bgColor=c;document.querySelectorAll('.bg-swatch').forEach(x=>x.classList.remove('active'));sw.classList.add('active');const pg=S.pages[S.currentPage];if(!pg.bg&&!pg.ann){fillBg();}};row.appendChild(sw);});p.appendChild(row);
+const sep1=document.createElement('div');sep1.className='exp-sep';p.appendChild(sep1);
+const addBtn=document.createElement('button');addBtn.className='exp-btn';addBtn.style.width='auto';addBtn.style.padding='0 12px';addBtn.style.fontSize='11px';addBtn.textContent='+ Naya Page';addBtn.onclick=e=>{e.stopPropagation();addBlankPage();closeAllPanels();};p.appendChild(addBtn);
+const delBtn=document.createElement('button');delBtn.className='exp-btn';delBtn.style.width='auto';delBtn.style.padding='0 12px';delBtn.style.fontSize='11px';delBtn.textContent='🗑 Delete Page';delBtn.onclick=e=>{e.stopPropagation();deleteCurrentPage();closeAllPanels();};p.appendChild(delBtn);
+const pdfBtn=document.createElement('button');pdfBtn.className='exp-btn';pdfBtn.style.width='auto';pdfBtn.style.padding='0 12px';pdfBtn.style.fontSize='11px';pdfBtn.textContent='📄 PDF Export';pdfBtn.onclick=e=>{e.stopPropagation();closeAllPanels();exportPDF();};p.appendChild(pdfBtn);
+const sep2=document.createElement('div');sep2.className='exp-sep';p.appendChild(sep2);
+const gridRow=document.createElement('div');gridRow.className='wm-toggle';const gridLabel=document.createElement('span');gridLabel.textContent='Grid Lines';const gridTrack=document.createElement('div');gridTrack.className='toggle-track'+(S.gridOn?' on':'');const gridKnob=document.createElement('div');gridKnob.className='toggle-knob';gridTrack.appendChild(gridKnob);gridRow.appendChild(gridLabel);gridRow.appendChild(gridTrack);gridRow.onclick=e=>{e.stopPropagation();S.gridOn=!S.gridOn;gridTrack.classList.toggle('on',S.gridOn);const pg=S.pages[S.currentPage];if(!pg.bg&&!pg.ann){fillBg();}};p.appendChild(gridRow);
+}
+
+buildToolsPanel();buildColorsPanel();buildShapesPanel();buildSettingsPanel();
+fillBg();
+
+// ═══ DRAWING ═══
+function gP(e){const r=MC.getBoundingClientRect();const cx=e.touches?e.touches[0].clientX:e.clientX,cy=e.touches?e.touches[0].clientY:e.clientY;return{x:(cx-r.left)/S.zoom,y:(cy-r.top)/S.zoom};}
+MC.addEventListener('pointerdown',oD);MC.addEventListener('pointermove',oM);MC.addEventListener('pointerup',oU);MC.addEventListener('pointerleave',oU);
+
+function oD(e){closeAllPanels();if(txOv.style.display==='block')return;try{MC.setPointerCapture(e.pointerId);}catch(err){}const p=gP(e);if(S.tool==='select'){if(S.selectedImageIndex>=0){const si=S.currentImages[S.selectedImageIndex];const hx=si.x+si.w,hy=si.y+si.h;const distH=Math.hypot(p.x-hx,p.y-hy);if(distH<40){si.dragging='resize';si.dragStartX=p.x;si.dragStartY=p.y;si.origW=si.w;si.origH=si.h;return;}if(p.x>=si.x&&p.x<=si.x+si.w&&p.y>=si.y&&p.y<=si.y+si.h){si.dragging='move';si.dragStartX=p.x;si.dragStartY=p.y;si.origX=si.x;si.origY=si.y;return;}}let hit=-1;for(let i=S.currentImages.length-1;i>=0;i--){const im=S.currentImages[i];if(p.x>=im.x&&p.x<=im.x+im.w&&p.y>=im.y&&p.y<=im.y+im.h){hit=i;break;}}S.selectedImageIndex=hit;renderLiveImages();updateImageActionBar();return;}if(S.tool==='text'){showTx(e.clientX,e.clientY);return;}if(S.tool==='pointer'){S.laserActive=true;S.pointerTrail=[];drawLaser(p.x,p.y);return;}S.isDrawing=true;S.startX=p.x;S.startY=p.y;S.lastX=p.x;S.lastY=p.y;S.lastPointTime=Date.now();S.currentPressure=(e.pointerType==='pen'&&e.pressure>0)?e.pressure:null;saveState();if(['pen','highlighter','eraser'].includes(S.tool)){S.strokePoints=[{x:p.x,y:p.y}];S.strokeDist=0;}}
+
+function oM(e){const p=gP(e);if(e.pointerType==='pen'&&e.pressure>0)S.currentPressure=e.pressure;if(S.tool==='select'&&S.selectedImageIndex>=0&&S.currentImages[S.selectedImageIndex].dragging){const si=S.currentImages[S.selectedImageIndex];if(si.dragging==='move'){si.x=si.origX+(p.x-si.dragStartX);si.y=si.origY+(p.y-si.dragStartY);}else if(si.dragging==='resize'){const dx=p.x-si.dragStartX;const aspect=si.img.width/si.img.height;const neww=Math.max(30,si.origW+dx);si.w=neww;si.h=neww/aspect;}renderLiveImages();return;}if(S.tool==='pointer'&&S.laserActive){S.pointerTrail.push({x:p.x,y:p.y,t:Date.now()});drawLaser(p.x,p.y);return;}if(!S.isDrawing)return;if(S.tool==='pen'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=S.color;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=1;extendSmoothPath(ctx,p,'pen');}else if(S.tool==='highlighter'){ctx.globalCompositeOperation='source-over';ctx.strokeStyle=S.color;ctx.lineWidth=S.size*4;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=.3;extendSmoothPath(ctx,p,'highlighter');}else if(S.tool==='eraser'){ctx.globalCompositeOperation='destination-out';ctx.lineWidth=S.size*3;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=1;extendSmoothPath(ctx,p,'eraser');}else if(S.tool==='shape'){renderLiveImages();tctx.strokeStyle=S.color;tctx.lineWidth=S.size;tctx.lineCap='round';tctx.globalAlpha=.8;drawShape(tctx,S.currentShape,S.startX,S.startY,p.x,p.y);}S.lastX=p.x;S.lastY=p.y;}
+
+function extendSmoothPath(c,rawP,tool){const pts=S.strokePoints;let p=rawP;if(pts.length){const last=pts[pts.length-1];p={x:last.x*0.32+rawP.x*0.68,y:last.y*0.32+rawP.y*0.68};}pts.push(p);const l=pts.length;if(tool==='pen'){const now=Date.now();const dt=Math.max(1,now-S.lastPointTime);const dist=Math.hypot(p.x-S.lastX,p.y-S.lastY);const speed=dist/dt;S.lastPointTime=now;S.strokeDist+=dist;let wf=Math.max(0.5,Math.min(1.3,1.15-speed*1.8));if(S.currentPressure!=null)wf*=(0.55+S.currentPressure*0.9);const taper=Math.min(1,S.strokeDist/26);wf*=Math.max(0.3,taper);c.lineWidth=S.size*Math.max(0.3,Math.min(1.8,wf));}c.beginPath();if(l<3){c.moveTo(pts[0].x,pts[0].y);c.lineTo(p.x,p.y);}else{const p0=pts[l-3],p1=pts[l-2],p2=pts[l-1];const startMid={x:(p0.x+p1.x)/2,y:(p0.y+p1.y)/2};const endMid={x:(p1.x+p2.x)/2,y:(p1.y+p2.y)/2};c.moveTo(startMid.x,startMid.y);c.quadraticCurveTo(p1.x,p1.y,endMid.x,endMid.y);}c.stroke();}
+
+function oU(e){try{MC.releasePointerCapture(e.pointerId);}catch(err){}if(S.tool==='select'){if(S.selectedImageIndex>=0)S.currentImages[S.selectedImageIndex].dragging=null;return;}if(S.tool==='pointer'){S.laserActive=false;setTimeout(()=>{if(S.tool==='pointer')renderLiveImages();},400);return;}if(!S.isDrawing)return;S.isDrawing=false;const p=e.type==='pointerleave'?{x:S.lastX,y:S.lastY}:gP(e);ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;if(S.tool==='shape'){renderLiveImages();ctx.strokeStyle=S.color;ctx.lineWidth=S.size;ctx.lineCap='round';drawShape(ctx,S.currentShape,S.startX,S.startY,p.x,p.y);}if(S.tool==='pen'&&S.strokePoints.length>=2){const pts=S.strokePoints;const prevP=pts[pts.length-2];const lastP=pts[pts.length-1];const baseW=ctx.lineWidth;ctx.save();ctx.strokeStyle=S.color;ctx.lineCap='round';ctx.lineJoin='round';ctx.globalAlpha=1;ctx.globalCompositeOperation='source-over';const steps=4;for(let i=1;i<=steps;i++){const t0=(i-1)/steps,t1=i/steps;const x0=prevP.x+(lastP.x-prevP.x)*t0,y0=prevP.y+(lastP.y-prevP.y)*t0;const x1=prevP.x+(lastP.x-prevP.x)*t1,y1=prevP.y+(lastP.y-prevP.y)*t1;ctx.lineWidth=Math.max(0.6,baseW*(1-t1*0.65));ctx.beginPath();ctx.moveTo(x0,y0);ctx.lineTo(x1,y1);ctx.stroke();}ctx.restore();}ctx.beginPath();S.strokePoints=[];}
+
+function drawShape(c,t,x1,y1,x2,y2){c.beginPath();if(t==='line'){c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();}else if(t==='rect'){c.strokeRect(x1,y1,x2-x1,y2-y1);}else if(t==='circle'){c.ellipse((x1+x2)/2,(y1+y2)/2,Math.abs(x2-x1)/2,Math.abs(y2-y1)/2,0,0,Math.PI*2);c.stroke();}else if(t==='arrow'){c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke();const a=Math.atan2(y2-y1,x2-x1),hl=Math.max(15,S.size*4);c.beginPath();c.moveTo(x2,y2);c.lineTo(x2-hl*Math.cos(a-Math.PI/6),y2-hl*Math.sin(a-Math.PI/6));c.moveTo(x2,y2);c.lineTo(x2-hl*Math.cos(a+Math.PI/6),y2-hl*Math.sin(a+Math.PI/6));c.stroke();}else if(t==='diamond'){const cx=(x1+x2)/2,cy=(y1+y2)/2,hw=Math.abs(x2-x1)/2,hh=Math.abs(y2-y1)/2;c.moveTo(cx,cy-hh);c.lineTo(cx+hw,cy);c.lineTo(cx,cy+hh);c.lineTo(cx-hw,cy);c.closePath();c.stroke();}}
+
+function drawLaser(x,y){renderLiveImages();const n=Date.now();S.pointerTrail=S.pointerTrail.filter(p=>n-p.t<800);S.pointerTrail.forEach(p=>{const a=1-(n-p.t)/800;tctx.beginPath();tctx.arc(p.x,p.y,4+(1-a)*3,0,Math.PI*2);tctx.fillStyle='rgba(255,82,82,'+(a*.5)+')';tctx.fill();});tctx.beginPath();tctx.arc(x,y,8,0,Math.PI*2);tctx.fillStyle='#ff5252';tctx.fill();tctx.beginPath();tctx.arc(x,y,16,0,Math.PI*2);tctx.fillStyle='rgba(255,82,82,.15)';tctx.fill();}
+
+// ═══ TEXT TOOL ═══
+function showTx(x,y){txP={x,y};txOv.style.display='block';txOv.style.left=x+'px';txOv.style.top=y+'px';txA.value='';txA.style.color=S.color;txA.style.fontSize=Math.max(18,S.size*5)+'px';txA.focus();}
+function commitTx(){const t=txA.value.trim();if(t){saveState();const fs=Math.max(18,S.size*5);ctx.font=fs+"px 'Noto Sans Devanagari','Noto Sans','Segoe UI',system-ui,sans-serif";ctx.fillStyle=S.color;ctx.textBaseline='top';t.split('\n').forEach((l,i)=>ctx.fillText(l,txP.x,txP.y+i*(fs*1.4)));}txOv.style.display='none';}
+document.getElementById('text-done').onclick=e=>{e.stopPropagation();commitTx();};
+document.getElementById('text-cancel').onclick=e=>{e.stopPropagation();txOv.style.display='none';};
+txA.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();commitTx();}if(e.key==='Escape')txOv.style.display='none';e.stopPropagation();});
+
+// ═══ IMAGE INSERT + SELECT (PowerPoint-style: tap any image to select, drag corner to resize, drag inside to move) ═══
+const imgIns=document.getElementById('image-insert');
+const imgPlaceBar=document.getElementById('img-place-bar');
+imgIns.addEventListener('change',e=>{const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const mW=MC.width*.5,mH=MC.height*.5;if(w>mW||h>mH){const s=Math.min(mW/w,mH/h);w*=s;h*=s;}S.currentImages.push({img,x:(MC.width-w)/2,y:(MC.height-h)/2,w,h,dragging:null});S.selectedImageIndex=S.currentImages.length-1;setTool('select');renderLiveImages();updateImageActionBar();showToast('Kone se resize, beech se move karo');};img.src=ev.target.result;};r.readAsDataURL(f);imgIns.value='';});
+
+function renderLiveImages(){tctx.clearRect(0,0,TC.width,TC.height);S.currentImages.forEach((im,i)=>{tctx.drawImage(im.img,im.x,im.y,im.w,im.h);if(i===S.selectedImageIndex){tctx.save();tctx.strokeStyle='#00e5ff';tctx.lineWidth=2;tctx.setLineDash([6,4]);tctx.strokeRect(im.x,im.y,im.w,im.h);tctx.setLineDash([]);tctx.beginPath();tctx.arc(im.x+im.w,im.y+im.h,17,0,Math.PI*2);tctx.fillStyle='#00e5ff';tctx.fill();tctx.strokeStyle='#fff';tctx.lineWidth=2.5;tctx.stroke();tctx.beginPath();tctx.moveTo(im.x+im.w-7,im.y+im.h-7);tctx.lineTo(im.x+im.w+7,im.y+im.h+7);tctx.moveTo(im.x+im.w+7,im.y+im.h-7);tctx.lineTo(im.x+im.w-7,im.y+im.h+7);tctx.strokeStyle='#0a0e16';tctx.lineWidth=2;tctx.stroke();tctx.restore();}});}
+
+function updateImageActionBar(){if(S.selectedImageIndex>=0){imgPlaceBar.classList.add('show');}else{imgPlaceBar.classList.remove('show');}}
+
+function flattenCurrentImages(){if(S.currentImages.length){saveState();S.currentImages.forEach(im=>{ctx.drawImage(im.img,im.x,im.y,im.w,im.h);});S.currentImages=[];}S.selectedImageIndex=-1;tctx.clearRect(0,0,TC.width,TC.height);updateImageActionBar();}
+
+document.getElementById('img-delete-btn').addEventListener('click',e=>{e.stopPropagation();if(S.selectedImageIndex<0)return;S.currentImages.splice(S.selectedImageIndex,1);S.selectedImageIndex=-1;renderLiveImages();updateImageActionBar();showToast('Image delete ho gayi');});
+
+// ═══ PASTE (image or text — from Google, WhatsApp, anywhere) ═══
+function insertImageBlob(blob){return new Promise(resolve=>{const url=URL.createObjectURL(blob);const img=new Image();img.onload=()=>{let w=img.width,h=img.height;const mW=MC.width*.5,mH=MC.height*.5;if(w>mW||h>mH){const s=Math.min(mW/w,mH/h);w*=s;h*=s;}S.currentImages.push({img,x:(MC.width-w)/2,y:(MC.height-h)/2,w,h,dragging:null});S.selectedImageIndex=S.currentImages.length-1;setTool('select');renderLiveImages();updateImageActionBar();resolve(true);};img.onerror=()=>resolve(false);img.src=url;});}
+function insertPastedText(text){saveState();const fs=Math.max(18,S.size*5);ctx.font=fs+"px 'Noto Sans Devanagari','Noto Sans','Segoe UI',system-ui,sans-serif";ctx.fillStyle=S.color;ctx.textBaseline='top';const x=MC.width*0.12,maxW=MC.width*0.76;let y=MC.height*0.3;text.split('\n').forEach(par=>{const words=par.split(' ');let line='';words.forEach(w=>{const test=line?line+' '+w:w;if(ctx.measureText(test).width>maxW&&line){ctx.fillText(line,x,y);y+=fs*1.4;line=w;}else{line=test;}});if(line){ctx.fillText(line,x,y);y+=fs*1.4;}});}
+
+async function tryPasteButton(){
+if(navigator.clipboard&&navigator.clipboard.read){
+try{
+const items=await navigator.clipboard.read();
+let handled=false;
+for(const item of items){
+for(const type of item.types){
+if(type.startsWith('image/')){const blob=await item.getType(type);if(await insertImageBlob(blob))handled=true;}
+}
+}
+if(!handled&&navigator.clipboard.readText){
+try{const text=await navigator.clipboard.readText();if(text&&text.trim()){insertPastedText(text);handled=true;}}catch(e2){}
+}
+if(handled){showToast('Paste ho gaya!');return;}
+}catch(err){/* permission denied or unsupported — fall through to manual box below */}
+}
+document.getElementById('paste-overlay').classList.add('show');const target=document.getElementById('paste-target');target.innerHTML='';target.focus();
+}
+
+document.getElementById('paste-target').addEventListener('paste',async e=>{
+e.preventDefault();
+const items=e.clipboardData&&e.clipboardData.items;
+let imageHandled=false;
+if(items){for(const item of items){if(item.type&&item.type.startsWith('image/')){const blob=item.getAsFile();if(blob&&await insertImageBlob(blob))imageHandled=true;}}}
+if(!imageHandled){const text=e.clipboardData.getData('text/plain');if(text&&text.trim())insertPastedText(text);}
+document.getElementById('paste-overlay').classList.remove('show');
+showToast('Paste ho gaya!');
+});
+document.getElementById('paste-cancel-btn').addEventListener('click',e=>{e.stopPropagation();document.getElementById('paste-overlay').classList.remove('show');});
+document.getElementById('paste-overlay').addEventListener('click',e=>{e.stopPropagation();});
+
+document.addEventListener('paste',async e=>{
+if(document.getElementById('paste-overlay').classList.contains('show'))return;
+if(txOv.style.display==='block')return;
+const items=e.clipboardData&&e.clipboardData.items;
+if(!items||!items.length)return;
+e.preventDefault();
+let imageHandled=false;
+for(const item of items){if(item.type&&item.type.startsWith('image/')){const blob=item.getAsFile();if(blob&&await insertImageBlob(blob))imageHandled=true;}}
+if(!imageHandled){const text=e.clipboardData.getData('text/plain');if(text&&text.trim())insertPastedText(text);}
+if(imageHandled||e.clipboardData.getData('text/plain'))showToast('Paste ho gaya!');
+});
+
+// ═══ ZOOM ═══
+function setZoom(z){S.zoom=Math.max(.25,Math.min(4,z));MC.style.transform='scale('+S.zoom+')';TC.style.transform='scale('+S.zoom+')';}
+document.getElementById('dk-zoomin').onclick=e=>{e.stopPropagation();setZoom(S.zoom+.1);};
+document.getElementById('dk-zoomout').onclick=e=>{e.stopPropagation();setZoom(S.zoom-.1);};
+
+// ═══ SAVE (PNG quick) / PDF EXPORT (all pages) / CLEAR / HOME ═══
+document.getElementById('dk-save').onclick=e=>{e.stopPropagation();flattenCurrentImages();const a=document.createElement('a');a.download='GVG-board-'+Date.now()+'.png';a.href=MC.toDataURL();a.click();showToast('PNG save ho gaya!');};
+
+async function exportPDF(){
+if(!window.jspdf){showToast('PDF export engine load nahi hua - internet check karein');return;}
+flattenCurrentImages();
+savePage();
+showToast('PDF taiyar ho raha hai...');
+const{jsPDF}=window.jspdf;
+const w=MC.width,h=MC.height,orient=w>h?'l':'p';
+const doc=new jsPDF({unit:'px',format:[w,h],orientation:orient,compress:true});
+for(let i=0;i<S.pages.length;i++){
+const pg=S.pages[i];
+const tc=document.createElement('canvas');tc.width=w;tc.height=h;
+renderPageOnto(tc.getContext('2d'),pg,w,h);
+if(i>0)doc.addPage([w,h],orient);
+doc.addImage(tc.toDataURL('image/jpeg',0.92),'JPEG',0,0,w,h);
+await new Promise(r=>setTimeout(r,0));
+}
+doc.save('GVG-lecture-notes-'+Date.now()+'.pdf');
+showToast('PDF save ho gaya! ('+S.pages.length+' page)');
+}
+
+document.getElementById('dk-clear').onclick=e=>{e.stopPropagation();S.currentImages=[];S.selectedImageIndex=-1;tctx.clearRect(0,0,TC.width,TC.height);updateImageActionBar();saveState();const pg=S.pages[S.currentPage];pg.ann=null;ctx.clearRect(0,0,MC.width,MC.height);drawPageBg(pg);showToast('Page clear!');};
+document.getElementById('home-btn').onclick=e=>{e.stopPropagation();S.currentImages=[];S.selectedImageIndex=-1;tctx.clearRect(0,0,TC.width,TC.height);updateImageActionBar();closeFile();S.pages=[{bg:null,ann:null}];S.currentPage=0;ctx.clearRect(0,0,MC.width,MC.height);fillBg();S.undoStack=[];S.redoStack=[];updatePageLabel();updatePagesToggleBtn();clearSavedSession();showToast('Board reset');};
+
+// ═══ HIDE UI ═══
+const topBar=document.getElementById('top-bar'),dockWrap=document.getElementById('dock-wrap');let restoreTab;
+function ensureRestoreTab(){if(restoreTab)return;restoreTab=document.createElement('div');restoreTab.className='restore-tab';restoreTab.onclick=e=>{e.stopPropagation();toggleUI(true);};document.body.appendChild(restoreTab);}
+function toggleUI(show){ensureRestoreTab();if(show){topBar.classList.remove('hidden');dockWrap.classList.remove('hidden');restoreTab.classList.remove('show');}else{closeAllPanels();topBar.classList.add('hidden');dockWrap.classList.add('hidden');restoreTab.classList.add('show');}}
+document.getElementById('hide-ui-btn').onclick=e=>{e.stopPropagation();toggleUI(false);};
+
+// ═══ WATERMARK ═══
+document.getElementById('wm-toggle-btn').onclick=e=>{e.stopPropagation();document.getElementById('watermark').classList.toggle('visible');e.currentTarget.classList.toggle('active');};
+
+// ═══ RECORDING TIMER (visual only — reminder while you screen-record externally) ═══
+function updateRecTime(){const s=Math.floor((Date.now()-S.recordStart)/1000);const mm=String(Math.floor(s/60)).padStart(2,'0');const ss=String(s%60).padStart(2,'0');document.getElementById('rec-time').textContent=mm+':'+ss;}
+document.getElementById('rec-timer-btn').onclick=e=>{e.stopPropagation();const btn=e.currentTarget;if(!S.recording){S.recording=true;S.recordStart=Date.now();document.getElementById('rec-badge').classList.add('show');btn.classList.add('active');recInterval=setInterval(updateRecTime,1000);updateRecTime();}else{S.recording=false;clearInterval(recInterval);document.getElementById('rec-badge').classList.remove('show');btn.classList.remove('active');}};
+
+// ═══ FILE IMPORT (PDF + Images only) ═══
+const fileModal=document.getElementById('file-modal'),fileDZ=document.getElementById('file-drop-zone'),fileLd=document.getElementById('file-loading'),fileEr=document.getElementById('file-error'),fileUp=document.getElementById('file-upload');
+document.getElementById('dk-file').addEventListener('click',e=>{e.stopPropagation();closeAllPanels();fileModal.classList.add('open');fileEr.style.display='none';fileLd.style.display='none';fileDZ.style.display='block';});
+document.getElementById('file-modal-close').addEventListener('click',e=>{e.stopPropagation();fileModal.classList.remove('open');});
+fileModal.addEventListener('click',e=>{if(e.target===fileModal){e.stopPropagation();fileModal.classList.remove('open');}});
+fileDZ.addEventListener('click',e=>{e.stopPropagation();fileUp.click();});
+fileDZ.addEventListener('dragover',e=>{e.preventDefault();e.stopPropagation();fileDZ.classList.add('dragover');});
+fileDZ.addEventListener('dragleave',e=>{e.stopPropagation();fileDZ.classList.remove('dragover');});
+fileDZ.addEventListener('drop',e=>{e.preventDefault();e.stopPropagation();fileDZ.classList.remove('dragover');const f=e.dataTransfer.files[0];if(f)processFile(f);});
+fileUp.addEventListener('change',e=>{const f=e.target.files[0];if(f)processFile(f);fileUp.value='';});
+document.getElementById('close-file-btn').addEventListener('click',e=>{e.stopPropagation();closeFile();});
+function showFE(m){fileLd.style.display='none';fileDZ.style.display='block';fileEr.textContent=m;fileEr.style.display='block';}
+function closeFile(){S.docActive=false;S.fileName='';document.getElementById('file-badge').classList.remove('visible');document.getElementById('slide-strip').classList.remove('visible');document.getElementById('slide-strip').innerHTML='';document.getElementById('pages-toggle-btn').classList.remove('active');}
+
+async function processFile(file){const name=file.name.toLowerCase();fileDZ.style.display='none';fileLd.style.display='block';fileEr.style.display='none';try{let pages;if(name.match(/\.pdf$/))pages=await pagesFromPDF(file);else if(name.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/))pages=await pagesFromImage(file);else{showFE('Sirf PDF aur Image (.pdf/.png/.jpg) support hai');return;}if(!pages||!pages.length){showFE('Content nahi mila');return;}flattenCurrentImages();savePage();const insertAt=S.currentPage+1;const newPages=pages.map(c=>({bg:c,ann:null}));S.pages.splice(insertAt,0,...newPages);S.docActive=true;S.fileName=file.name;loadPage(insertAt);document.getElementById('file-filename').textContent=file.name;document.getElementById('file-badge').classList.add('visible');buildSlideStrip();updatePagesToggleBtn();fileModal.classList.remove('open');showToast(pages.length+' page(s) board me jud gaye');}catch(err){console.error(err);showFE('Error: '+err.message);}}
+
+function buildSlideStrip(){const strip=document.getElementById('slide-strip');strip.innerHTML='';S.pages.forEach((pg,i)=>{const t=document.createElement('div');t.className='slide-thumb'+(i===S.currentPage?' active':'');t.onclick=e=>{e.stopPropagation();loadPage(i);document.getElementById('slide-strip').classList.remove('visible');document.getElementById('pages-toggle-btn').classList.remove('active');};const cv=document.createElement('canvas');cv.width=72;cv.height=44;const cc=cv.getContext('2d');cc.fillStyle='#fff';cc.fillRect(0,0,72,44);if(pg.bg)cc.drawImage(pg.bg,0,0,72,44);t.appendChild(cv);const n=document.createElement('span');n.className='snum';n.textContent=i+1;t.appendChild(n);strip.appendChild(t);});}
+function updateSlideStripActive(){document.querySelectorAll('.slide-thumb').forEach((t,i)=>t.classList.toggle('active',i===S.currentPage));const at=document.getElementById('slide-strip').children[S.currentPage];if(at)at.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});}
+function updatePagesToggleBtn(){const btn=document.getElementById('pages-toggle-btn');if(S.pages.length>1){btn.classList.add('show');btn.textContent='🗂 Pages ('+S.pages.length+')';}else{btn.classList.remove('show');document.getElementById('slide-strip').classList.remove('visible');}}
+document.getElementById('pages-toggle-btn').addEventListener('click',e=>{e.stopPropagation();const strip=document.getElementById('slide-strip');const isOpen=strip.classList.toggle('visible');e.currentTarget.classList.toggle('active',isOpen);if(isOpen)buildSlideStrip();});
+
+async function pagesFromPDF(file){if(!window['pdfjsLib'])throw new Error('PDF engine load nahi hua - internet check karein');const buf=await file.arrayBuffer();const doc=await pdfjsLib.getDocument({data:buf}).promise;const pages=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i);const vp=page.getViewport({scale:2});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;pages.push(cv);}return pages;}
+async function pagesFromImage(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;cv.getContext('2d').drawImage(img,0,0);res([cv]);};img.onerror=()=>rej(new Error('Image load fail'));img.src=ev.target.result;};r.onerror=()=>rej(new Error('Read fail'));r.readAsDataURL(file);});}
+
+// ═══ AUTO-SAVE SESSION (localStorage — recovers work if tab/app closes unexpectedly) ═══
+function flattenPageToDataURL(pg){const tc=document.createElement('canvas');tc.width=MC.width;tc.height=MC.height;renderPageOnto(tc.getContext('2d'),pg,MC.width,MC.height);return tc.toDataURL('image/png');}
+function clearSavedSession(){try{localStorage.removeItem('gvg_board_session');}catch(e){}}
+function saveSessionToStorage(){try{if(S.currentImages.length||!S.pages.length)return;savePage();const flat=S.pages.map(pg=>flattenPageToDataURL(pg));const data={v:1,currentPage:S.currentPage,bgColor:S.bgColor,pages:flat};localStorage.setItem('gvg_board_session',JSON.stringify(data));}catch(e){}}
+function restoreSessionFromStorage(cb){try{const raw=localStorage.getItem('gvg_board_session');if(!raw){cb(false);return;}const data=JSON.parse(raw);if(!data||!data.pages||!data.pages.length){cb(false);return;}let loaded=0;const results=new Array(data.pages.length);function finish(){S.pages=results;S.bgColor=data.bgColor||S.bgColor;const idx=Math.min(data.currentPage||0,results.length-1);S.currentPage=idx;ctx.clearRect(0,0,MC.width,MC.height);const pg=results[idx];if(pg.ann){ctx.putImageData(pg.ann,0,0);}else{fillBg();}updatePageLabel();updatePagesToggleBtn();cb(true);}data.pages.forEach((url,i)=>{const img=new Image();img.onload=()=>{const tc=document.createElement('canvas');tc.width=MC.width;tc.height=MC.height;tc.getContext('2d').drawImage(img,0,0,MC.width,MC.height);results[i]={bg:null,ann:tc.getContext('2d').getImageData(0,0,MC.width,MC.height)};loaded++;if(loaded===data.pages.length)finish();};img.onerror=()=>{results[i]={bg:null,ann:null};loaded++;if(loaded===data.pages.length)finish();};img.src=url;});}catch(e){cb(false);}}
+window.addEventListener('beforeunload',saveSessionToStorage);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSessionToStorage();});
+setInterval(saveSessionToStorage,25000);
+
+// ═══ UI containment (prevent panel-close on internal clicks) ═══
+['top-bar','dock-wrap','text-input-overlay','file-modal','paste-overlay'].forEach(id=>{const el=document.getElementById(id);if(el){el.addEventListener('click',e=>e.stopPropagation());el.addEventListener('pointerdown',e=>e.stopPropagation());}});
+document.addEventListener('click',()=>closeAllPanels());
+
+// ═══ KEYBOARD SHORTCUTS ═══
+document.addEventListener('keydown',e=>{if(txOv.style.display==='block')return;if(e.ctrlKey||e.metaKey){if(e.key==='z'){e.preventDefault();undo();}if(e.key==='y'){e.preventDefault();redo();}return;}const km={p:'pen',h:'highlighter',e:'eraser',l:'pointer',t:'text'};if(km[e.key])setTool(km[e.key]);});
+
+setTool('pen');updatePageLabel();
+restoreSessionFromStorage(function(ok){if(ok)showToast('Pichla kaam wapas aa gaya');});
+console.log('Grih Vigyan Gurukul Smart Board Ready');
+</script>
+</body></html>

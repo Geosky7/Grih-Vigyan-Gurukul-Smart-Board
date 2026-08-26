@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gvg-smartboard-v5';
+const CACHE_NAME = 'gvg-smartboard-v6';
 const CORE_ASSETS = [
   'index.html',
   'manifest.json',

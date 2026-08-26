@@ -1,4 +1,4 @@
-const CACHE_NAME = 'gvg-smartboard-v6';
+const CACHE_NAME = 'gvg-smartboard-v7';
 const CORE_ASSETS = [
   'index.html',
   'manifest.json',
@@ -8,7 +8,8 @@ const CORE_ASSETS = [
 const LIB_ASSETS = [
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js',
   'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'
+  'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',
+  'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js'
 ];
 
 // Install - cache core app files (must succeed) + libraries (best effort, one bad URL won't break the rest)

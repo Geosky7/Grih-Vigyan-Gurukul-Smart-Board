@@ -516,6 +516,7 @@ async function pagesFromImage(file){return new Promise((res,rej)=>{const r=new F
 // becomes its own board page - exactly like a multi-page PDF. Otherwise it's treated as one long
 // document and sliced into 16:9 chunks so nothing gets squeezed into one illegible strip.
 function pagesFromHTML_paginateTall(cv,aspectW,aspectH){
+  if(!cv||!cv.width||!cv.height)throw new Error('HTML render khaali aaya - file me visible content check karein');
   const pageH=Math.max(1,Math.round(cv.width*aspectH/aspectW));
   const n=Math.max(1,Math.ceil(cv.height/pageH));
   const out=[];
@@ -535,9 +536,10 @@ async function pagesFromHTML(file){
   const doc=new DOMParser().parseFromString(raw,'text/html');
   const styleHTML=Array.from(doc.querySelectorAll('style')).map(s=>s.outerHTML).join('\n');
   const bodyHTML=doc.body?doc.body.innerHTML:raw;
+  if(!bodyHTML||!bodyHTML.trim())throw new Error('HTML file khaali hai ya content nahi mila');
   const W=1600; // matches the 1600×900 slide spec given to the HTML-generation prompt
   const holder=document.createElement('div');
-  holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;background:#fff;';
+  holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;min-height:200px;background:#fff;';
   holder.innerHTML=styleHTML+bodyHTML;
   document.body.appendChild(holder);
   const pages=[];
@@ -551,11 +553,16 @@ async function pagesFromHTML(file){
       directChildren.forEach(c=>{if(c!==mainEl)c.style.display='none';});
       for(const el of slideEls){
         slideEls.forEach(s=>{s.style.display=(s===el?'':'none');});
-        const cv=await html2canvas(mainEl||holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+        const target=mainEl||holder;
+        if(!target.offsetWidth||!target.offsetHeight)continue; // skip slides that render with no visible size
+        const cv=await html2canvas(target,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+        if(!cv||!cv.width||!cv.height)continue; // skip a failed/empty capture instead of crashing
         pages.push(cv);
       }
     }else{
+      if(!holder.offsetWidth||!holder.offsetHeight)throw new Error('HTML content visible nahi hai - shayad CSS ne sab hide kar diya');
       const cv=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
+      if(!cv||!cv.width||!cv.height)throw new Error('HTML render khaali aaya - file me visible content check karein');
       pagesFromHTML_paginateTall(cv,16,9).forEach(c=>pages.push(c));
     }
   }finally{

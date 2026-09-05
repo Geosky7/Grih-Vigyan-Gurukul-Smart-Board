@@ -1,4 +1,5 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0,viewport-fit=cover"><meta name="theme-color" content="#0a0e16"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="GVG Board"><meta name="mobile-web-app-capable" content="yes"><meta name="description" content="Grih Vigyan Gurukul - Digital Smart Board"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><title>Smart Board - Gurukul</title><style>
+<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no,maximum-scale=1.0,viewport-fit=cover"><meta name="theme-color" content="#0a0e16"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><meta name="apple-mobile-web-app-title" content="GVG Board"><meta name="mobile-web-app-capable" content="yes"><meta name="description" content="Grih Vigyan Gurukul - Digital Smart Board"><link rel="manifest" href="manifest.json"><link rel="apple-touch-icon" href="icons/icon-192.png"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@600;700&family=Noto+Sans+Devanagari:wght@500;700&display=swap" rel="stylesheet"><title>Smart Board - Gurukul</title><style>
+:root{--accent:#00e5ff;--accent-warm:#ffb648;--ink:#0a0e16;}
 *{margin:0;padding:0;box-sizing:border-box;}
 body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;touch-action:none;user-select:none;background:#111;}
 
@@ -10,20 +11,23 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 
 /* ═══ WATERMARK ═══ */
 #watermark{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:3;pointer-events:none;opacity:0;transition:opacity .5s ease;}
-#watermark.visible{opacity:1;}
+#watermark.visible{opacity:1;animation:breathe 5s ease-in-out infinite;}
+@keyframes breathe{0%,100%{transform:translate(-50%,-50%) scale(1);}50%{transform:translate(-50%,-50%) scale(1.02);}}
 #watermark svg{width:min(35vw,35vh);height:min(35vw,35vh);filter:grayscale(30%);}
 
 /* ═══ TOP BAR ═══ */
-.top-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(10,14,22,.6);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.05);transition:transform .3s ease;}
+.top-bar{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;align-items:center;justify-content:space-between;padding:8px 16px;background:rgba(10,14,22,.6);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,255,255,.05);box-shadow:0 6px 20px rgba(0,0,0,.35);transition:transform .3s ease;}
+.top-bar::after{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.18),transparent);}
 .top-bar.hidden{transform:translateY(-100%);}
 .top-left{display:flex;align-items:center;gap:10px;}
-.top-logo{width:36px;height:36px;border-radius:8px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.2);}
+.top-logo{width:36px;height:36px;border-radius:10px;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 30% 20%,rgba(255,182,72,.16),rgba(0,229,255,.1) 65%);border:1px solid rgba(0,229,255,.25);box-shadow:0 0 0 1px rgba(255,182,72,.12) inset,0 2px 6px rgba(0,0,0,.3);}
 .top-logo svg{width:28px;height:28px;}
-.top-title{color:rgba(255,255,255,.7);font-size:12px;font-weight:600;letter-spacing:.5px;}
-.top-title span{color:#00e5ff;}
+.top-title{font-family:'Poppins','Noto Sans Devanagari',sans-serif;color:rgba(255,255,255,.75);font-size:12.5px;font-weight:600;letter-spacing:.3px;position:relative;padding-bottom:3px;}
+.top-title span{font-family:'Noto Sans Devanagari','Poppins',sans-serif;color:var(--accent);font-weight:700;border-bottom:2px solid rgba(255,182,72,.55);padding-bottom:2px;}
 .top-right{display:flex;align-items:center;gap:6px;}
 .top-btn{width:34px;height:34px;border:none;border-radius:8px;background:transparent;color:rgba(255,255,255,.5);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
 .top-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.top-btn:active{transform:scale(.9);}
 .top-btn.active{color:#00e5ff;}
 .file-badge{position:fixed;top:50px;right:16px;z-index:200;background:rgba(10,14,22,.7);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:5px 12px;font-size:11px;color:rgba(255,255,255,.6);display:none;align-items:center;gap:8px;max-width:50vw;}
 .file-badge.visible{display:flex;}
@@ -32,7 +36,7 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 .file-badge .close-file:hover{color:#ff5252;}
 
 /* ═══ RECORDING TIMER ═══ */
-.rec-badge{display:none;position:fixed;top:50px;left:16px;z-index:200;align-items:center;gap:6px;background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);backdrop-filter:blur(12px);padding:5px 12px;border-radius:20px;color:#ff5252;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;}
+.rec-badge{display:none;position:fixed;top:50px;left:16px;z-index:200;align-items:center;gap:6px;background:rgba(255,82,82,.15);border:1px solid rgba(255,82,82,.3);backdrop-filter:blur(12px);padding:5px 12px;border-radius:20px;color:#ff5252;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;box-shadow:0 0 16px rgba(255,82,82,.15),0 4px 12px rgba(0,0,0,.3);}
 .rec-badge.show{display:flex;}
 .rec-dot{width:8px;height:8px;border-radius:50%;background:#ff5252;animation:recBlink 1s infinite;}
 @keyframes recBlink{0%,100%{opacity:1;}50%{opacity:.3;}}
@@ -46,12 +50,14 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 @keyframes panelIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
 .exp-btn{min-width:42px;height:42px;border:none;border-radius:10px;background:transparent;color:rgba(255,255,255,.55);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;position:relative;flex-shrink:0;}
 .exp-btn:hover{background:rgba(255,255,255,.1);color:#fff;}
+.exp-btn:active{transform:scale(.9);}
 .exp-btn.active{background:rgba(0,188,212,.25);color:#00e5ff;box-shadow:inset 0 0 0 1.5px rgba(0,229,255,.4);}
 .exp-btn .tip{display:none;position:absolute;bottom:50px;left:50%;transform:translateX(-50%);background:rgba(10,14,22,.95);color:#fff;padding:4px 10px;border-radius:6px;font-size:10px;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.1);}
 .exp-btn:hover .tip{display:block;}
 .exp-sep{width:1px;height:28px;background:rgba(255,255,255,.08);flex-shrink:0;}
-.exp-color{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;flex-shrink:0;}
+.exp-color{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;flex-shrink:0;position:relative;}
 .exp-color:hover,.exp-color.active{border-color:#fff;transform:scale(1.15);}
+.exp-color.active::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.8);}
 .exp-color-picker{position:relative;width:26px;height:26px;flex-shrink:0;}
 .exp-color-picker input[type=color]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .exp-color-icon{width:26px;height:26px;border-radius:50%;border:2px dashed rgba(255,255,255,.25);background:conic-gradient(red,yellow,lime,aqua,blue,magenta,red);pointer-events:none;}
@@ -59,8 +65,9 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 .exp-slider::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#00e5ff;cursor:pointer;box-shadow:0 0 6px rgba(0,229,255,.5);}
 .exp-label{color:rgba(255,255,255,.45);font-size:10px;min-width:30px;text-align:center;}
 .bg-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:center;}
-.bg-swatch{width:30px;height:30px;border-radius:8px;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;}
+.bg-swatch{width:30px;height:30px;border-radius:8px;border:2px solid rgba(255,255,255,.15);cursor:pointer;transition:all .15s;position:relative;}
 .bg-swatch:hover,.bg-swatch.active{border-color:#fff;transform:scale(1.1);}
+.bg-swatch.active::after{content:'✓';position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;text-shadow:0 0 3px rgba(0,0,0,.8);}
 .wm-toggle{display:flex;align-items:center;gap:8px;padding:4px 12px;border-radius:8px;background:rgba(255,255,255,.05);cursor:pointer;transition:all .15s;}
 .wm-toggle:hover{background:rgba(255,255,255,.1);}
 .wm-toggle span{color:rgba(255,255,255,.6);font-size:11px;}
@@ -69,9 +76,11 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 .wm-toggle .toggle-knob{width:16px;height:16px;border-radius:50%;background:#fff;position:absolute;top:2px;left:2px;transition:left .2s;}
 .wm-toggle .toggle-track.on .toggle-knob{left:18px;}
 
-.dock{display:flex;align-items:center;gap:4px;padding:8px 12px;background:rgba(10,14,22,.85);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.07);border-radius:18px 18px 0 0;margin:0 8px;}
+.dock{position:relative;display:flex;align-items:center;gap:4px;padding:8px 12px;background:rgba(10,14,22,.85);backdrop-filter:blur(24px);border:1px solid rgba(255,255,255,.07);border-radius:18px 18px 0 0;margin:0 8px;box-shadow:0 -8px 24px rgba(0,0,0,.4);}
+.dock::before{content:'';position:absolute;top:0;left:14px;right:14px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.2),transparent);}
 .dk-btn{width:44px;height:44px;border:none;border-radius:12px;background:transparent;color:rgba(255,255,255,.5);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s;position:relative;flex-shrink:0;}
 .dk-btn:hover{background:rgba(255,255,255,.08);color:#fff;transform:translateY(-3px) scale(1.05);}
+.dk-btn:active{transform:translateY(-1px) scale(.92);}
 .dk-btn.active{background:rgba(0,188,212,.2);color:#00e5ff;box-shadow:0 0 12px rgba(0,229,255,.2);}
 .dk-btn .dk-label{position:absolute;bottom:-18px;left:50%;transform:translateX(-50%);font-size:8px;color:rgba(255,255,255,.35);white-space:nowrap;pointer-events:none;}
 .dk-sep{width:1px;height:30px;background:rgba(255,255,255,.06);flex-shrink:0;}
@@ -82,7 +91,7 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 .slide-strip.visible{display:flex;}
 .slide-strip::-webkit-scrollbar{height:3px;}
 .slide-strip::-webkit-scrollbar-thumb{background:rgba(255,255,255,.15);border-radius:2px;}
-.pages-toggle-btn{display:none;position:fixed;bottom:104px;left:50%;transform:translateX(-50%);z-index:199;background:rgba(10,14,22,.8);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.65);font-size:11px;align-items:center;gap:6px;cursor:pointer;}
+.pages-toggle-btn{display:none;position:fixed;bottom:14px;right:14px;left:auto;transform:none;z-index:199;background:rgba(10,14,22,.8);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:6px 16px;color:rgba(255,255,255,.65);font-size:11px;align-items:center;gap:6px;cursor:pointer;}
 .pages-toggle-btn.show{display:flex;}
 .pages-toggle-btn.active{color:#00e5ff;border-color:rgba(0,229,255,.35);background:rgba(0,188,212,.12);}
 .slide-thumb{width:72px;height:44px;min-width:72px;border-radius:6px;border:2px solid rgba(255,255,255,.08);cursor:pointer;overflow:hidden;transition:all .15s;position:relative;background:rgba(255,255,255,.03);}
@@ -110,21 +119,29 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 
 #file-upload,#image-insert{display:none;}
 
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,229,255,.9);color:#0a0e16;padding:8px 20px;border-radius:10px;font-size:12px;font-weight:600;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80vw;text-align:center;}
+.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(0,229,255,.9);color:#0a0e16;padding:8px 20px 8px 16px;border-radius:10px;font-size:12px;font-weight:600;z-index:400;opacity:0;transition:opacity .3s;pointer-events:none;max-width:80vw;text-align:center;display:flex;align-items:center;gap:8px;}
+.toast::before{content:'✓';display:flex;align-items:center;justify-content:center;width:16px;height:16px;flex-shrink:0;border-radius:50%;background:#0a0e16;color:#00e5ff;font-size:10px;font-weight:900;}
 .toast.show{opacity:1;}
 
 .file-modal-overlay{display:none;position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.6);backdrop-filter:blur(8px);align-items:center;justify-content:center;}
 .file-modal-overlay.open{display:flex;}
-.file-modal{background:rgba(20,25,40,.95);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;max-width:500px;width:90%;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.6);}
-.file-modal h2{color:#fff;font-size:17px;margin-bottom:16px;}.file-modal h2 span{color:#00e5ff;}
+.file-modal{background:rgba(20,25,40,.95);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:28px;max-width:500px;width:90%;backdrop-filter:blur(20px);box-shadow:0 20px 60px rgba(0,0,0,.6);position:relative;overflow:hidden;}
+.file-modal::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,#00e5ff,#ffb648);}
+.file-modal h2{color:#fff;font-size:17px;margin-bottom:16px;font-family:'Poppins',sans-serif;}.file-modal h2 span{color:#00e5ff;}
 .file-drop{border:2px dashed rgba(255,255,255,.12);border-radius:14px;padding:40px 20px;text-align:center;cursor:pointer;transition:all .2s;}
 .file-drop:hover,.file-drop.dragover{border-color:#00e5ff;background:rgba(0,229,255,.05);}
 .file-drop .icon{font-size:42px;margin-bottom:8px;}.file-drop p{color:rgba(255,255,255,.5);font-size:13px;line-height:1.7;}.file-drop .sub{color:rgba(255,255,255,.25);font-size:10px;margin-top:6px;}
 .file-drop .formats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;}
-.file-drop .format-tag{padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600;background:rgba(0,229,255,.1);color:rgba(0,229,255,.8);border:1px solid rgba(0,229,255,.15);}
+.file-drop .format-tag{padding:4px 10px;border-radius:6px;font-size:9px;font-weight:600;background:rgba(0,229,255,.1);color:rgba(0,229,255,.8);border:1px solid rgba(0,229,255,.15);display:inline-flex;align-items:center;gap:4px;}
+.file-drop .format-tag::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;}
 .file-loading{display:none;text-align:center;padding:30px;color:rgba(255,255,255,.5);}
 .file-loading .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.1);border-top-color:#00e5ff;border-radius:50%;margin:0 auto 10px;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg);}}
+.file-loading .progress-text{font-size:12px;color:rgba(255,255,255,.7);margin-top:2px;}
+.file-loading .progress-track{width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1);margin:12px 0;overflow:hidden;}
+.file-loading .progress-fill{height:100%;width:0%;background:#00e5ff;border-radius:3px;transition:width .15s ease;}
+.file-loading .cancel-import{margin-top:8px;padding:6px 18px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:transparent;color:rgba(255,255,255,.6);font-size:11px;cursor:pointer;}
+.file-loading .cancel-import:hover{background:rgba(255,82,82,.15);color:#ff5252;border-color:rgba(255,82,82,.3);}
 .file-error{display:none;color:#ff5252;text-align:center;padding:14px;font-size:12px;}
 .file-modal-close{float:right;background:none;border:none;color:rgba(255,255,255,.3);font-size:22px;cursor:pointer;line-height:1;}.file-modal-close:hover{color:#fff;}
 
@@ -208,7 +225,7 @@ body{overflow:hidden;font-family:'Segoe UI',system-ui,-apple-system,sans-serif;t
 <div class="img-place-bar" id="img-place-bar"><span class="hint">Kone se resize • Beech se move • Bahar tap kro deselect</span><button class="cancel-btn" id="img-delete-btn">🗑 Delete</button></div>
 <div class="slide-strip" id="slide-strip"></div>
 <button class="pages-toggle-btn" id="pages-toggle-btn">🗂 Pages</button>
-<div class="file-modal-overlay" id="file-modal"><div class="file-modal"><button class="file-modal-close" id="file-modal-close">&times;</button><h2>Import <span>File</span></h2><div class="file-drop" id="file-drop-zone"><div class="icon">📂</div><p>Drag & drop or click to browse</p><div class="formats"><span class="format-tag">PDF</span><span class="format-tag">Images</span><span class="format-tag">HTML</span></div><p class="sub">PDF ke har page ek slide banega • HTML sabse sharp aata hai (PDF jaisa quality-loss nahi)</p></div><div class="file-loading" id="file-loading"><div class="spinner"></div><p>Processing...</p></div><div class="file-error" id="file-error"></div></div></div>
+<div class="file-modal-overlay" id="file-modal"><div class="file-modal"><button class="file-modal-close" id="file-modal-close">&times;</button><h2>Import <span>File</span></h2><div class="file-drop" id="file-drop-zone"><div class="icon">📂</div><p>Drag & drop or click to browse</p><div class="formats"><span class="format-tag">PDF</span><span class="format-tag">Images</span><span class="format-tag">HTML</span></div><p class="sub">PDF ke har page ek slide banega • HTML sabse sharp aata hai (PDF jaisa quality-loss nahi)</p></div><div class="file-loading" id="file-loading"><div class="spinner"></div><p id="file-loading-msg">Processing...</p><div class="progress-track"><div class="progress-fill" id="file-progress-fill"></div></div><p class="progress-text" id="file-progress-text"></p><button class="cancel-import" id="file-cancel-btn">Cancel</button></div><div class="file-error" id="file-error"></div></div></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -238,8 +255,27 @@ let recInterval=null;
 let DPR=Math.max(1,Math.min(2,window.devicePixelRatio||1));
 let LW=innerWidth,LH=innerHeight;
 
+// ═══ CHALK GRAIN ═══ a tiny cached speck pattern, tiled once via fillRect (cheap - not per-pixel
+// noise every frame). Mixed light+dark flecks at low alpha so it reads on any board colour (dark
+// slate, white, or a coloured background), and it's only ever painted onto the blank/background
+// layer of a page - never over an imported PDF/image/HTML page, which stays crisp.
+let chalkPattern=null;
+function getChalkPattern(){
+  if(chalkPattern)return chalkPattern;
+  const size=96;const pc=document.createElement('canvas');pc.width=size;pc.height=size;
+  const pctx=pc.getContext('2d');const id=pctx.createImageData(size,size);
+  for(let i=0;i<id.data.length;i+=4){
+    const light=Math.random()<0.5;
+    id.data[i]=light?255:0;id.data[i+1]=light?255:0;id.data[i+2]=light?255:0;
+    id.data[i+3]=Math.random()<0.85?0:Math.floor(Math.random()*22);
+  }
+  pctx.putImageData(id,0,0);
+  chalkPattern=pctx.createPattern(pc,'repeat');
+  return chalkPattern;
+}
+function applyChalkGrain(c,w,h){c.save();c.globalAlpha=0.6;c.fillStyle=getChalkPattern();c.fillRect(0,0,w,h);c.restore();}
 function drawGridOnto(c,w,h){c.save();const step=50;c.strokeStyle='rgba(128,128,128,.25)';c.lineWidth=1;c.beginPath();for(let x=0;x<w;x+=step){c.moveTo(x,0);c.lineTo(x,h);}for(let y=0;y<h;y+=step){c.moveTo(0,y);c.lineTo(w,y);}c.stroke();c.restore();}
-function fillBg(){ctx.fillStyle=S.bgColor;ctx.fillRect(0,0,LW,LH);if(S.gridOn)drawGridOnto(ctx,LW,LH);}
+function fillBg(){ctx.fillStyle=S.bgColor;ctx.fillRect(0,0,LW,LH);if(S.gridOn)drawGridOnto(ctx,LW,LH);applyChalkGrain(ctx,LW,LH);}
 function resize(){
   const w=innerWidth,h=innerHeight;
   let d=null;try{d=ctx.getImageData(0,0,MC.width,MC.height);}catch(e){}
@@ -263,14 +299,14 @@ resize();window.addEventListener('resize',resize);
 function showToast(m){toastEl.textContent=m;toastEl.classList.add('show');setTimeout(()=>toastEl.classList.remove('show'),1800);}
 
 // ═══ UNDO/REDO ═══
-function saveState(){S.undoStack.push(ctx.getImageData(0,0,MC.width,MC.height));if(S.undoStack.length>S.maxUndo)S.undoStack.shift();S.redoStack=[];}
+function saveState(){S.undoStack.push(ctx.getImageData(0,0,MC.width,MC.height));if(S.undoStack.length>S.maxUndo)S.undoStack.shift();S.redoStack=[];const pg=S.pages[S.currentPage];if(pg)pg._dirty=true;}
 function undo(){if(!S.undoStack.length)return;S.redoStack.push(ctx.getImageData(0,0,MC.width,MC.height));ctx.putImageData(S.undoStack.pop(),0,0);}
 function redo(){if(!S.redoStack.length)return;S.undoStack.push(ctx.getImageData(0,0,MC.width,MC.height));ctx.putImageData(S.redoStack.pop(),0,0);}
 document.getElementById('dk-undo').onclick=e=>{e.stopPropagation();undo();};
 document.getElementById('dk-redo').onclick=e=>{e.stopPropagation();redo();};
 
 // ═══ PAGE RENDERING (shared by live canvas, PDF export, thumbnails, autosave) ═══
-function renderBgOnly(c,pg,w,h){if(pg.bg){const sa=pg.bg.width/pg.bg.height,ca=w/h;let dw,dh,dx,dy;if(ca>sa){dh=h;dw=dh*sa;dx=(w-dw)/2;dy=0;}else{dw=w;dh=dw/sa;dx=0;dy=(h-dh)/2;}c.fillStyle='#ffffff';c.fillRect(0,0,w,h);c.drawImage(pg.bg,dx,dy,dw,dh);}else{c.fillStyle=S.bgColor;c.fillRect(0,0,w,h);if(S.gridOn)drawGridOnto(c,w,h);}}
+function renderBgOnly(c,pg,w,h){if(pg.bg){const sa=pg.bg.width/pg.bg.height,ca=w/h;let dw,dh,dx,dy;if(ca>sa){dh=h;dw=dh*sa;dx=(w-dw)/2;dy=0;}else{dw=w;dh=dw/sa;dx=0;dy=(h-dh)/2;}c.fillStyle='#ffffff';c.fillRect(0,0,w,h);c.drawImage(pg.bg,dx,dy,dw,dh);}else{c.fillStyle=S.bgColor;c.fillRect(0,0,w,h);if(S.gridOn)drawGridOnto(c,w,h);applyChalkGrain(c,w,h);}}
 function renderPageOnto(c,pg,w,h){if(pg.ann){c.putImageData(pg.ann,0,0);return;}renderBgOnly(c,pg,w,h);}
 // Cache of the CURRENT page's pure background (no ink), rebuilt once per eraser stroke (in oD()) at
 // device-pixel resolution so it stays sharp. The eraser uses this to repaint under the erased area -
@@ -482,6 +518,15 @@ document.getElementById('rec-timer-btn').onclick=e=>{e.stopPropagation();const b
 
 // ═══ FILE IMPORT (PDF + Images only) ═══
 const fileModal=document.getElementById('file-modal'),fileDZ=document.getElementById('file-drop-zone'),fileLd=document.getElementById('file-loading'),fileEr=document.getElementById('file-error'),fileUp=document.getElementById('file-upload');
+const fileLdMsg=document.getElementById('file-loading-msg'),fileProgFill=document.getElementById('file-progress-fill'),fileProgText=document.getElementById('file-progress-text'),fileCancelBtn=document.getElementById('file-cancel-btn');
+// ═══ IMPORT PROGRESS / CANCEL ═══ large PDFs/HTML files used to freeze the whole UI: every page
+// was rendered back-to-back with no gap for the browser to repaint or read touch input, so a
+// 100+ page file looked hung even though it was still working. yieldToUI() hands control back to
+// the browser between pages so the spinner/progress bar actually animates and Cancel stays tappable.
+let importCancelled=false;
+function yieldToUI(){return new Promise(r=>setTimeout(r,0));}
+function setImportProgress(done,total,label){fileLdMsg.textContent=label||'Processing...';fileProgText.textContent=total?(done+' / '+total+' pages'):'';fileProgFill.style.width=(total?Math.round(done/total*100):0)+'%';}
+fileCancelBtn.addEventListener('click',e=>{e.stopPropagation();importCancelled=true;});
 document.getElementById('dk-file').addEventListener('click',e=>{e.stopPropagation();closeAllPanels();fileModal.classList.add('open');fileEr.style.display='none';fileLd.style.display='none';fileDZ.style.display='block';});
 document.getElementById('file-modal-close').addEventListener('click',e=>{e.stopPropagation();fileModal.classList.remove('open');});
 fileModal.addEventListener('click',e=>{if(e.target===fileModal){e.stopPropagation();fileModal.classList.remove('open');}});
@@ -494,14 +539,37 @@ document.getElementById('close-file-btn').addEventListener('click',e=>{e.stopPro
 function showFE(m){fileLd.style.display='none';fileDZ.style.display='block';fileEr.textContent=m;fileEr.style.display='block';}
 function closeFile(){S.docActive=false;S.fileName='';document.getElementById('file-badge').classList.remove('visible');document.getElementById('slide-strip').classList.remove('visible');document.getElementById('slide-strip').innerHTML='';document.getElementById('pages-toggle-btn').classList.remove('active');}
 
-async function processFile(file){const name=file.name.toLowerCase();fileDZ.style.display='none';fileLd.style.display='block';fileEr.style.display='none';try{let pages;if(name.match(/\.pdf$/))pages=await pagesFromPDF(file);else if(name.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/))pages=await pagesFromImage(file);else if(name.match(/\.html?$/))pages=await pagesFromHTML(file);else{showFE('Sirf PDF, Image ya HTML (.pdf/.png/.jpg/.html) support hai');return;}if(!pages||!pages.length){showFE('Content nahi mila');return;}flattenCurrentImages();savePage();const insertAt=S.currentPage+1;const newPages=pages.map(c=>({bg:c,ann:null}));S.pages.splice(insertAt,0,...newPages);S.docActive=true;S.fileName=file.name;loadPage(insertAt);document.getElementById('file-filename').textContent=file.name;document.getElementById('file-badge').classList.add('visible');buildSlideStrip();updatePagesToggleBtn();fileModal.classList.remove('open');showToast(pages.length+' page(s) board me jud gaye');}catch(err){console.error(err);showFE('Error: '+err.message);}}
+async function processFile(file){const name=file.name.toLowerCase();fileDZ.style.display='none';fileLd.style.display='block';fileEr.style.display='none';importCancelled=false;setImportProgress(0,0,'Processing...');try{let pages;if(name.match(/\.pdf$/))pages=await pagesFromPDF(file,setImportProgress);else if(name.match(/\.(png|jpe?g|gif|bmp|webp|svg)$/))pages=await pagesFromImage(file);else if(name.match(/\.html?$/))pages=await pagesFromHTML(file,setImportProgress);else{showFE('Sirf PDF, Image ya HTML (.pdf/.png/.jpg/.html) support hai');return;}if(importCancelled){fileLd.style.display='none';fileDZ.style.display='block';showToast('Import cancel ho gaya');return;}if(!pages||!pages.length){showFE('Content nahi mila');return;}flattenCurrentImages();savePage();const insertAt=S.currentPage+1;const newPages=pages.map(c=>({bg:c,ann:null}));newPages.forEach(p=>p._dirty=true);S.pages.splice(insertAt,0,...newPages);S.docActive=true;S.fileName=file.name;loadPage(insertAt);document.getElementById('file-filename').textContent=file.name;document.getElementById('file-badge').classList.add('visible');buildSlideStrip();updatePagesToggleBtn();fileModal.classList.remove('open');showToast(pages.length+' page(s) board me jud gaye');}catch(err){console.error(err);if(!importCancelled)showFE('Error: '+err.message);}}
 
 function buildSlideStrip(){const strip=document.getElementById('slide-strip');strip.innerHTML='';S.pages.forEach((pg,i)=>{const t=document.createElement('div');t.className='slide-thumb'+(i===S.currentPage?' active':'');t.onclick=e=>{e.stopPropagation();loadPage(i);document.getElementById('slide-strip').classList.remove('visible');document.getElementById('pages-toggle-btn').classList.remove('active');};const cv=document.createElement('canvas');cv.width=72;cv.height=44;const cc=cv.getContext('2d');cc.fillStyle='#fff';cc.fillRect(0,0,72,44);if(pg.bg)cc.drawImage(pg.bg,0,0,72,44);t.appendChild(cv);const n=document.createElement('span');n.className='snum';n.textContent=i+1;t.appendChild(n);strip.appendChild(t);});}
 function updateSlideStripActive(){document.querySelectorAll('.slide-thumb').forEach((t,i)=>t.classList.toggle('active',i===S.currentPage));const at=document.getElementById('slide-strip').children[S.currentPage];if(at)at.scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'});}
 function updatePagesToggleBtn(){const btn=document.getElementById('pages-toggle-btn');if(S.pages.length>1){btn.classList.add('show');btn.textContent='🗂 Pages ('+S.pages.length+')';}else{btn.classList.remove('show');document.getElementById('slide-strip').classList.remove('visible');}}
 document.getElementById('pages-toggle-btn').addEventListener('click',e=>{e.stopPropagation();const strip=document.getElementById('slide-strip');const isOpen=strip.classList.toggle('visible');e.currentTarget.classList.toggle('active',isOpen);if(isOpen)buildSlideStrip();});
 
-async function pagesFromPDF(file){if(!window['pdfjsLib'])throw new Error('PDF engine load nahi hua - internet check karein');const buf=await file.arrayBuffer();const doc=await pdfjsLib.getDocument({data:buf}).promise;const pdfScale=Math.min(4,Math.max(2,DPR*2));const pages=[];for(let i=1;i<=doc.numPages;i++){const page=await doc.getPage(i);const vp=page.getViewport({scale:pdfScale});const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;pages.push(cv);}return pages;}
+// Resolution scales DOWN as page-count goes UP, so a 100+ page PDF can't blow the tab's memory
+// budget. A retina scale (up to 4x) is fine for a 5-page handout but would try to hold multiple
+// gigabytes of decoded bitmap for a 150-page file - that's what was actually crashing/hanging the
+// UI, not just the render loop. This keeps every import inside a roughly fixed memory envelope.
+function adaptivePdfScale(numPages){const base=Math.min(4,Math.max(2,DPR*2));if(numPages<=25)return base;if(numPages<=60)return Math.min(base,2.5);if(numPages<=120)return Math.min(base,1.75);return Math.min(base,1.25);}
+async function pagesFromPDF(file,onProgress){
+  if(!window['pdfjsLib'])throw new Error('PDF engine load nahi hua - internet check karein');
+  const buf=await file.arrayBuffer();
+  const doc=await pdfjsLib.getDocument({data:buf}).promise;
+  const total=doc.numPages;
+  const pdfScale=adaptivePdfScale(total);
+  const pages=[];
+  for(let i=1;i<=total;i++){
+    if(importCancelled)break;
+    const page=await doc.getPage(i);
+    const vp=page.getViewport({scale:pdfScale});
+    const cv=document.createElement('canvas');cv.width=vp.width;cv.height=vp.height;
+    await page.render({canvasContext:cv.getContext('2d'),viewport:vp}).promise;
+    pages.push(cv);
+    if(onProgress)onProgress(i,total,'PDF page bana rahe hain...');
+    await yieldToUI(); // hands control back to the browser so the spinner/progress bar/Cancel button stay live
+  }
+  return pages;
+}
 async function pagesFromImage(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=ev=>{const img=new Image();img.onload=()=>{const cv=document.createElement('canvas');cv.width=img.width;cv.height=img.height;cv.getContext('2d').drawImage(img,0,0);res([cv]);};img.onerror=()=>rej(new Error('Image load fail'));img.src=ev.target.result;};r.onerror=()=>rej(new Error('Read fail'));r.readAsDataURL(file);});}
 
 // ═══ HTML IMPORT (AI-generated .html → crisp page(s), no PDF round-trip) ═══
@@ -530,7 +598,7 @@ function pagesFromHTML_paginateTall(cv,aspectW,aspectH){
   }
   return out;
 }
-async function pagesFromHTML(file){
+async function pagesFromHTML(file,onProgress){
   if(!window['html2canvas'])throw new Error('HTML renderer load nahi hua - internet check karein');
   const raw=await file.text();
   const doc=new DOMParser().parseFromString(raw,'text/html');
@@ -551,32 +619,83 @@ async function pagesFromHTML(file){
       const mainEl=holder.querySelector('main');
       const directChildren=Array.from(holder.children);
       directChildren.forEach(c=>{if(c!==mainEl)c.style.display='none';});
-      for(const el of slideEls){
+      // A deck with 100+ <section> slides used to render all of them back-to-back with no gap,
+      // freezing input for as long as the whole deck took. Yielding + a scale that eases down for
+      // very large decks keeps it responsive and keeps memory bounded, same as the PDF path.
+      const slideScale=slideEls.length>80?1.25:(slideEls.length>40?1.5:2);
+      for(let i=0;i<slideEls.length;i++){
+        if(importCancelled)break;
+        const el=slideEls[i];
         slideEls.forEach(s=>{s.style.display=(s===el?'':'none');});
         const target=mainEl||holder;
-        if(!target.offsetWidth||!target.offsetHeight)continue; // skip slides that render with no visible size
-        const cv=await html2canvas(target,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
-        if(!cv||!cv.width||!cv.height)continue; // skip a failed/empty capture instead of crashing
-        pages.push(cv);
+        if(target.offsetWidth&&target.offsetHeight){ // skip slides that render with no visible size
+          const cv=await html2canvas(target,{scale:slideScale,backgroundColor:'#ffffff',useCORS:true,logging:false});
+          if(cv&&cv.width&&cv.height)pages.push(cv); // skip a failed/empty capture instead of crashing
+        }
+        if(onProgress)onProgress(i+1,slideEls.length,'Slides bana rahe hain...');
+        await yieldToUI();
       }
     }else{
       if(!holder.offsetWidth||!holder.offsetHeight)throw new Error('HTML content visible nahi hai - shayad CSS ne sab hide kar diya');
+      if(onProgress)onProgress(0,1,'HTML render kar rahe hain...');
       const cv=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
       if(!cv||!cv.width||!cv.height)throw new Error('HTML render khaali aaya - file me visible content check karein');
       pagesFromHTML_paginateTall(cv,16,9).forEach(c=>pages.push(c));
+      if(onProgress)onProgress(1,1,'HTML render kar rahe hain...');
     }
   }finally{
     document.body.removeChild(holder);
   }
-  if(!pages.length)throw new Error('HTML se koi content nahi mila');
+  if(!pages.length&&!importCancelled)throw new Error('HTML se koi content nahi mila');
   return pages;
 }
 
-// ═══ AUTO-SAVE SESSION (localStorage — recovers work if tab/app closes unexpectedly) ═══
+// ═══ AUTO-SAVE SESSION ═══
+// Previously this re-encoded EVERY page to a full-res PNG and JSON.stringify'd the lot into
+// localStorage, synchronously, every 25s + on tab-hide + on close. For a 100+ page board that's
+// dozens of full-canvas PNG encodes back-to-back on the main thread (freezing input each time it
+// ran) AND localStorage's ~5-10MB quota, so it was silently failing (empty catch) on anything but
+// small boards - burning CPU every 25s for a save that never actually landed.
+// Fix: (1) only re-encode pages that changed since the last save (pg._dirty), (2) yield to the
+// browser periodically while encoding so input stays live, (3) store in IndexedDB (much larger
+// quota, async, doesn't block the main thread on write), (4) skip autosave entirely above a page
+// count where even a dirty-only pass would be too heavy, with a one-time toast pointing at Export.
+const IDB_NAME='gvg_board_db',IDB_STORE='kv',MAX_AUTOSAVE_PAGES=200;
+function idbOpen(){return new Promise((res,rej)=>{const req=indexedDB.open(IDB_NAME,1);req.onupgradeneeded=()=>{req.result.createObjectStore(IDB_STORE);};req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
+async function idbSet(key,val){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).put(val,key);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
+async function idbGet(key){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readonly');const req=tx.objectStore(IDB_STORE).get(key);req.onsuccess=()=>res(req.result);req.onerror=()=>rej(req.error);});}
+async function idbDel(key){const db=await idbOpen();return new Promise((res,rej)=>{const tx=db.transaction(IDB_STORE,'readwrite');tx.objectStore(IDB_STORE).delete(key);tx.oncomplete=()=>res(true);tx.onerror=()=>rej(tx.error);});}
 function flattenPageToDataURL(pg){const tc=document.createElement('canvas');tc.width=MC.width;tc.height=MC.height;renderPageOnto(tc.getContext('2d'),pg,MC.width,MC.height);return tc.toDataURL('image/png');}
-function clearSavedSession(){try{localStorage.removeItem('gvg_board_session');}catch(e){}}
-function saveSessionToStorage(){try{if(S.currentImages.length||!S.pages.length)return;savePage();const flat=S.pages.map(pg=>flattenPageToDataURL(pg));const data={v:1,currentPage:S.currentPage,bgColor:S.bgColor,pages:flat};localStorage.setItem('gvg_board_session',JSON.stringify(data));}catch(e){}}
-function restoreSessionFromStorage(cb){try{const raw=localStorage.getItem('gvg_board_session');if(!raw){cb(false);return;}const data=JSON.parse(raw);if(!data||!data.pages||!data.pages.length){cb(false);return;}let loaded=0;const results=new Array(data.pages.length);function finish(){S.pages=results;S.bgColor=data.bgColor||S.bgColor;const idx=Math.min(data.currentPage||0,results.length-1);S.currentPage=idx;ctx.clearRect(0,0,LW,LH);const pg=results[idx];if(pg.ann){ctx.putImageData(pg.ann,0,0);}else{fillBg();}updatePageLabel();updatePagesToggleBtn();cb(true);}data.pages.forEach((url,i)=>{const img=new Image();img.onload=()=>{const tc=document.createElement('canvas');tc.width=MC.width;tc.height=MC.height;tc.getContext('2d').drawImage(img,0,0,MC.width,MC.height);results[i]={bg:null,ann:tc.getContext('2d').getImageData(0,0,MC.width,MC.height)};loaded++;if(loaded===data.pages.length)finish();};img.onerror=()=>{results[i]={bg:null,ann:null};loaded++;if(loaded===data.pages.length)finish();};img.src=url;});}catch(e){cb(false);}}
+function clearSavedSession(){idbDel('gvg_board_session').catch(()=>{});try{localStorage.removeItem('gvg_board_session');}catch(e){}}
+let autosaveInFlight=false,autosaveWarnedOnce=false;
+async function saveSessionToStorage(){
+  if(autosaveInFlight||S.currentImages.length||!S.pages.length)return;
+  if(S.pages.length>MAX_AUTOSAVE_PAGES){if(!autosaveWarnedOnce){autosaveWarnedOnce=true;showToast('Board bahut bada hai autosave ke liye - Save/Export use karein');}return;}
+  autosaveInFlight=true;
+  try{
+    savePage();
+    for(let i=0;i<S.pages.length;i++){
+      const pg=S.pages[i];
+      if(pg._dirty||!pg._savedURL){pg._savedURL=flattenPageToDataURL(pg);pg._dirty=false;}
+      if(i%5===4)await yieldToUI();
+    }
+    const data={v:1,currentPage:S.currentPage,bgColor:S.bgColor,pages:S.pages.map(pg=>pg._savedURL)};
+    await idbSet('gvg_board_session',data);
+  }catch(e){}
+  autosaveInFlight=false;
+}
+async function restoreSessionFromStorage(cb){
+  try{
+    let data=await idbGet('gvg_board_session');
+    if(!data){ // one-time migration from the old localStorage-based save, if present
+      try{const raw=localStorage.getItem('gvg_board_session');if(raw){data=JSON.parse(raw);localStorage.removeItem('gvg_board_session');}}catch(e){}
+    }
+    if(!data||!data.pages||!data.pages.length){cb(false);return;}
+    let loaded=0;const results=new Array(data.pages.length);
+    function finish(){S.pages=results;S.bgColor=data.bgColor||S.bgColor;const idx=Math.min(data.currentPage||0,results.length-1);S.currentPage=idx;ctx.clearRect(0,0,LW,LH);const pg=results[idx];if(pg.ann){ctx.putImageData(pg.ann,0,0);}else{fillBg();}updatePageLabel();updatePagesToggleBtn();cb(true);}
+    data.pages.forEach((url,i)=>{const img=new Image();img.onload=()=>{const tc=document.createElement('canvas');tc.width=MC.width;tc.height=MC.height;tc.getContext('2d').drawImage(img,0,0,MC.width,MC.height);results[i]={bg:null,ann:tc.getContext('2d').getImageData(0,0,MC.width,MC.height),_savedURL:url,_dirty:false};loaded++;if(loaded===data.pages.length)finish();};img.onerror=()=>{results[i]={bg:null,ann:null};loaded++;if(loaded===data.pages.length)finish();};img.src=url;});
+  }catch(e){cb(false);}
+}
 window.addEventListener('beforeunload',saveSessionToStorage);
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')saveSessionToStorage();});
 setInterval(saveSessionToStorage,25000);

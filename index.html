@@ -606,45 +606,75 @@ async function pagesFromHTML(file,onProgress){
   const bodyHTML=doc.body?doc.body.innerHTML:raw;
   if(!bodyHTML||!bodyHTML.trim())throw new Error('HTML file khaali hai ya content nahi mila');
   const W=1600; // matches the 1600×900 slide spec given to the HTML-generation prompt
-  const holder=document.createElement('div');
-  holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;min-height:200px;background:#fff;';
-  holder.innerHTML=styleHTML+bodyHTML;
-  document.body.appendChild(holder);
   const pages=[];
+
+  // Detection-only pass: figure out if this is a multi-slide deck and, if so, grab each
+  // slide's own outerHTML as a string. This probe holder is never handed to html2canvas,
+  // so how many slides sit inside it doesn't matter for render cost - it's discarded
+  // right after detection.
+  const probe=document.createElement('div');
+  probe.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;';
+  probe.innerHTML=bodyHTML;
+  document.body.appendChild(probe);
+  let slideHTMLs=null;
   try{
-    let slideEls=Array.from(holder.querySelectorAll('.slide'));
-    if(slideEls.length<2)slideEls=Array.from(holder.querySelectorAll('main > section, body > section'));
-    if(slideEls.length<2){const mainEl=holder.querySelector('main');slideEls=mainEl?Array.from(mainEl.children):Array.from(holder.children);}
-    if(slideEls.length>=2){
-      const mainEl=holder.querySelector('main');
-      const directChildren=Array.from(holder.children);
-      directChildren.forEach(c=>{if(c!==mainEl)c.style.display='none';});
-      // A deck with 100+ <section> slides used to render all of them back-to-back with no gap,
-      // freezing input for as long as the whole deck took. Yielding + a scale that eases down for
-      // very large decks keeps it responsive and keeps memory bounded, same as the PDF path.
-      const slideScale=slideEls.length>80?1.25:(slideEls.length>40?1.5:2);
-      for(let i=0;i<slideEls.length;i++){
-        if(importCancelled)break;
-        const el=slideEls[i];
-        slideEls.forEach(s=>{s.style.display=(s===el?'':'none');});
-        const target=mainEl||holder;
+    let slideEls=Array.from(probe.querySelectorAll('.slide'));
+    if(slideEls.length<2)slideEls=Array.from(probe.querySelectorAll('main > section, body > section'));
+    if(slideEls.length<2){const mainEl=probe.querySelector('main');slideEls=mainEl?Array.from(mainEl.children):Array.from(probe.children);}
+    if(slideEls.length>=2)slideHTMLs=slideEls.map(e=>e.outerHTML);
+  }finally{
+    document.body.removeChild(probe);
+  }
+
+  if(slideHTMLs){
+    // html2canvas builds an off-screen clone of the WHOLE document it's asked to render
+    // from (to resolve inherited styles/stacking context correctly) even when you only
+    // ask it to crop out one small target element. So a shared holder containing all N
+    // slides - even with 215 of them display:none - still pays an N-slides-worth cost on
+    // EVERY single one of the N captures (that's the real O(n^2): not which element was
+    // targeted, but how many slides physically sat in that capture's document). Giving
+    // each capture its OWN small holder with only that one slide's markup means every
+    // capture's document really only contains one slide, so total time scales with N
+    // (one slide's cost, N times) instead of N² (N slides' cost, N times).
+    const n=slideHTMLs.length;
+    const slideScale=n>150?1:(n>80?1.25:(n>40?1.5:2));
+    for(let i=0;i<n;i++){
+      if(importCancelled)break;
+      const holder=document.createElement('div');
+      holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;min-height:200px;background:#fff;';
+      holder.innerHTML=styleHTML+'<main>'+slideHTMLs[i]+'</main>';
+      document.body.appendChild(holder);
+      try{
+        const target=holder.querySelector('.slide')||holder.querySelector('main')||holder;
         if(target.offsetWidth&&target.offsetHeight){ // skip slides that render with no visible size
           const cv=await html2canvas(target,{scale:slideScale,backgroundColor:'#ffffff',useCORS:true,logging:false});
           if(cv&&cv.width&&cv.height)pages.push(cv); // skip a failed/empty capture instead of crashing
         }
-        if(onProgress)onProgress(i+1,slideEls.length,'Slides bana rahe hain...');
-        await yieldToUI();
+      }finally{
+        document.body.removeChild(holder);
       }
-    }else{
+      if(onProgress)onProgress(i+1,n,'Slides bana rahe hain...');
+      // Yielding every single iteration forces a real (throttled ~4ms+) timer tick per
+      // slide just to keep the UI responsive - across 200+ slides that adds up to real
+      // seconds for no rendering benefit. Every 3rd slide is still often enough to keep
+      // the progress bar and Cancel button live.
+      if(i%3===2)await yieldToUI();
+    }
+  }else{
+    const holder=document.createElement('div');
+    holder.style.cssText='position:fixed;left:-99999px;top:0;width:'+W+'px;min-height:200px;background:#fff;';
+    holder.innerHTML=styleHTML+bodyHTML;
+    document.body.appendChild(holder);
+    try{
       if(!holder.offsetWidth||!holder.offsetHeight)throw new Error('HTML content visible nahi hai - shayad CSS ne sab hide kar diya');
       if(onProgress)onProgress(0,1,'HTML render kar rahe hain...');
       const cv=await html2canvas(holder,{scale:2,backgroundColor:'#ffffff',useCORS:true,logging:false});
       if(!cv||!cv.width||!cv.height)throw new Error('HTML render khaali aaya - file me visible content check karein');
       pagesFromHTML_paginateTall(cv,16,9).forEach(c=>pages.push(c));
       if(onProgress)onProgress(1,1,'HTML render kar rahe hain...');
+    }finally{
+      document.body.removeChild(holder);
     }
-  }finally{
-    document.body.removeChild(holder);
   }
   if(!pages.length&&!importCancelled)throw new Error('HTML se koi content nahi mila');
   return pages;
